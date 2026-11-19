@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     pw_hash TEXT NOT NULL,
     dav_pw_hash TEXT,
     lang TEXT,
+    first_session REAL,
     created REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS oauth_clients (
@@ -113,6 +114,8 @@ class DB:
         cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(users)")}
         if "lang" not in cols:
             self._conn.execute("ALTER TABLE users ADD COLUMN lang TEXT")
+        if "first_session" not in cols:
+            self._conn.execute("ALTER TABLE users ADD COLUMN first_session REAL")
         tables = {r["name"] for r in self._conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         if "kanal_baglantilari" in tables:
             self._conn.execute(
@@ -145,6 +148,18 @@ class DB:
     def user(self, user_id: str) -> sqlite3.Row | None:
         rows = self.q("SELECT * FROM users WHERE id = ?", (user_id,))
         return rows[0] if rows else None
+
+    def mark_first_session(self, user_id: str) -> None:
+        self.x("UPDATE users SET first_session = ? WHERE id = ? AND first_session IS NULL", (time.time(), user_id))
+
+    def onboarding(self, user_id: str) -> dict[str, bool]:
+        """Which getting-started steps the student has finished: connector added, first chat, Telegram."""
+        user = self.user(user_id)
+        return {
+            "connected": bool(self.q("SELECT 1 FROM oauth_tokens WHERE user_id = ? LIMIT 1", (user_id,))),
+            "chatted": bool(user and user["first_session"]),
+            "telegram": bool(self.q("SELECT 1 FROM channel_links WHERE user_id = ? LIMIT 1", (user_id,))),
+        }
 
     def login(self, email: str, password: str) -> str | None:
         row = self.user_by_email(email)

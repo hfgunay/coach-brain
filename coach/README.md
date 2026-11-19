@@ -70,6 +70,7 @@ The core (`reminders.py`) is channel independent; Telegram is only the `telegram
 - OAuth 2.1 (DCR + PKCE), email and password accounts, invite codes, login rate limiting
 - One vault per user, locked to that user (path traversal guarded)
 - WebDAV (`/dav`) for Obsidian sync. Engine-managed files (`beyin.py`, `AGENTS.md`, `CLAUDE.md`, dot folders) are hidden and read-only.
+- `/start`: the one link a new student gets (`/start?invite=<code>`). It explains the product, signs them up and walks through connecting Claude, the first chat and Telegram; each step ticks off by itself from what the server sees (a connector token, the first `start_session`, a Telegram link).
 - `/upload`: upload page for phones. Photos go to `Attachments/` (2000 px JPEG); PDF/Word/text (up to 100 MB) go through `beyin.py yakala ekle` into the inbox, with searchable page text.
 - English and Turkish UI; the language comes from `?lang=`, then a cookie, then the browser's `Accept-Language`.
 

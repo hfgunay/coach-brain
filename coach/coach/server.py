@@ -33,6 +33,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 
 from .auth import SCOPE, SESSION_COOKIE, AccountPages, Provider, page, request_lang
+from .onboarding import GettingStarted
 from .config import Settings
 from .db import DB
 from .i18n import t
@@ -72,6 +73,7 @@ def create_app(settings: Settings | None = None):
     db = DB(settings.db_path)
     provider = Provider(db, settings)
     pages = AccountPages(db, provider, settings)
+    getting_started = GettingStarted(pages, settings.public_url)
     tz = zone(settings.timezone)
 
     mcp = MCPServer(
@@ -96,11 +98,14 @@ def create_app(settings: Settings | None = None):
     def open_vault(user_id: str) -> Vault:
         return Vault(settings.vault_root, settings.state_root, user_id)
 
-    def vault() -> Vault:
+    def current_user() -> str:
         token = get_access_token()
         if token is None or not token.subject:
             raise VaultError("No session found; reconnect the connector.")
-        return open_vault(token.subject)
+        return token.subject
+
+    def vault() -> Vault:
+        return open_vault(current_user())
 
     # --- session -----------------------------------------------------------------
     @mcp.tool(title="Start session", annotations=READ)
@@ -109,7 +114,10 @@ def create_app(settings: Settings | None = None):
         Threads, Journal, due reviews (review_at) and tasks, the current time and the Receipt session value.
         Pass the returned `session` to save_receipt and learning_candidate."""
         session = uuid.uuid4().hex
-        return {"session": session, "context": vault().session_start(session)}
+        user_id = current_user()
+        context = open_vault(user_id).session_start(session)
+        db.mark_first_session(user_id)  # ticks "meet your coach" on the getting-started page
+        return {"session": session, "context": context}
 
     @mcp.tool(title="Read instructions", annotations=READ)
     def read_instructions(
@@ -339,14 +347,19 @@ def create_app(settings: Settings | None = None):
         db.q("SELECT 1")
         return JSONResponse({"status": "ok"})
 
+    @mcp.custom_route("/start", methods=["GET", "POST"])
+    async def start(request: Request) -> Response:
+        return await getting_started.start(request)
+
+    @mcp.custom_route("/start/status", methods=["GET"])
+    async def start_status(request: Request) -> Response:
+        return await getting_started.status(request)
+
     @mcp.custom_route("/", methods=["GET"])
     async def home(request: Request) -> Response:
-        lang = request_lang(request)
-        return page(request, t(lang, "app_name"), (
-            f"<h1>{t(lang, 'app_name')}</h1><p class='muted'>{t(lang, 'home_intro')}</p>"
-            f"<code>{settings.public_url}/mcp</code>"
-            f"<p class='muted' style='margin-top:20px'><a href='/upload'>{t(lang, 'home_upload')}</a> · "
-            f"<a href='/account/obsidian'>{t(lang, 'obsidian_title')}</a></p>"))
+        # One link for everyone: the getting-started page explains the product and walks through setup.
+        query = request.url.query
+        return RedirectResponse("/start" + (f"?{query}" if query else ""), status_code=303)
 
     host = urlparse(settings.public_url).netloc
     security = TransportSecuritySettings(
@@ -370,7 +383,7 @@ def create_app(settings: Settings | None = None):
         async def telegram_link(request: Request) -> Response:
             user_id = pages.read_cookie(request.cookies.get(SESSION_COOKIE))
             if not user_id:
-                return RedirectResponse("/upload", status_code=303)
+                return RedirectResponse("/start", status_code=303)
             if not telegram.username:
                 await telegram.setup()
             url = telegram.link_url(user_id)

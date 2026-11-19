@@ -1,5 +1,7 @@
 # Telefondan bağlama (öğrenci için)
 
+En kolayı: sana verilen `/start` linkini aç. O sayfa hesabını açar ve aşağıdaki adımları tek tek gösterir, yaptıkça işaretler. Bu rehber aynı adımların ayrıntılı hali.
+
 Bunu bir kez yapman yeterli, 5 dakika sürer. Sana iki şey verilecek:
 
 - **Bağlayıcı adresi**, örn. `https://coach-production.up.railway.app/mcp`

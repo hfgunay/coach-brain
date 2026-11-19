@@ -149,7 +149,7 @@ class Telegram:
         self.db.link(user_id, CHANNEL, target, s.morning_time, s.evening_time, s.timezone, lang,
                      now.date().isoformat(), now.strftime("%H:%M"))
         await self._say(target, t(lang, "tg_linked", morning=s.morning_time, evening=s.evening_time, tz=s.timezone)
-                        + "\n\n" + t(lang, "tg_help"))
+                        + "\n\n" + t(lang, "tg_help") + "\n\n" + t(lang, "tg_next", url=f"{s.public_url}/start"))
 
     async def _file(self, target: str, user_id: str, lang: str, m: dict) -> None:
         if "photo" in m:

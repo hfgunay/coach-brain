@@ -181,15 +181,15 @@ class RateLimiter:
 
 # --- HTML ------------------------------------------------------------------------
 _CSS = """
-:root{color-scheme:light dark;--bg:#f6f5f2;--card:#fff;--fg:#1d1d1f;--muted:#6b6b70;--acc:#0b6e4f;--err:#b3261e}
-@media (prefers-color-scheme:dark){:root{--bg:#141414;--card:#1e1e1f;--fg:#f2f2f2;--muted:#a0a0a5;--acc:#3ccf91}}
+:root{color-scheme:light dark;--bg:#f6f5f2;--card:#fff;--fg:#1d1d1f;--muted:#6b6b70;--acc:#0b6e4f;--on-acc:#fff;--err:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#141414;--card:#1e1e1f;--fg:#f2f2f2;--muted:#a0a0a5;--acc:#3ccf91;--on-acc:#05271a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,system-ui,sans-serif}
 main{max-width:420px;margin:0 auto;padding:32px 16px}
 .card{background:var(--card);border-radius:16px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 h1{font-size:22px;margin:0 0 4px}p.muted{color:var(--muted);margin:0 0 20px;font-size:14px}
 label{display:block;font-size:14px;margin:14px 0 6px;color:var(--muted)}
 input{width:100%;font-size:17px;padding:12px;border-radius:10px;border:1px solid #8884;background:transparent;color:var(--fg)}
-button{width:100%;margin-top:20px;font-size:17px;padding:13px;border:0;border-radius:10px;background:var(--acc);color:#fff;font-weight:600}
+button{width:100%;margin-top:20px;font-size:17px;padding:13px;border:0;border-radius:10px;background:var(--acc);color:var(--on-acc);font-weight:600}
 .err{color:var(--err);font-size:14px;margin-top:12px}.tabs{display:flex;gap:8px;margin-bottom:8px}
 .tabs a{flex:1;text-align:center;padding:8px;border-radius:8px;color:var(--fg);text-decoration:none;font-size:14px}
 .tabs a.on{background:#8882}code{font-size:14px;word-break:break-all;background:#8882;padding:2px 6px;border-radius:6px}
@@ -203,15 +203,17 @@ def request_lang(request: Request) -> str:
             or from_accept_language(request.headers.get("accept-language")))
 
 
-def page(request: Request, title: str, body: str, status: int = 200) -> HTMLResponse:
+def page(request: Request, title: str, body: str, status: int = 200, head: str = "", bare: bool = False) -> HTMLResponse:
+    """A page in the shared look. `head` adds styles or scripts; `bare` leaves out the card around the body."""
     lang = request_lang(request)
     query = {k: v for k, v in request.query_params.items() if k != "lang"}
     links = " ".join(f"<a href='?{html.escape(urlencode({**query, 'lang': code}))}'>{name}</a>"
                      for code, name in LANGUAGES.items() if code != lang)
+    content = body if bare else f"<div class='card'>{body}</div>"
     response = HTMLResponse(
         f"<!doctype html><html lang='{lang}'><head><meta charset='utf-8'>"
         f"<meta name='viewport' content='width=device-width,initial-scale=1'><title>{html.escape(title)}</title>"
-        f"<style>{_CSS}</style></head><body><main><div class='card'>{body}</div>"
+        f"<style>{_CSS}</style>{head}</head><body><main>{content}"
         f"<div class='langs'>{links}</div></main></body></html>",
         status_code=status, headers={"Cache-Control": "no-store", "X-Frame-Options": "DENY"})
     if normalize(request.query_params.get("lang")):
@@ -268,6 +270,11 @@ class AccountPages:
     def make_cookie(self, user_id: str) -> str:
         body = f"{user_id}.{int(time.time()) + SESSION_SECONDS}"
         return f"{body}.{self._sign(body)}"
+
+    def set_session(self, response: Response, user_id: str) -> None:
+        # Lax (not Strict) so the session survives coming back from claude.ai or t.me to the getting-started page.
+        response.set_cookie(SESSION_COOKIE, self.make_cookie(user_id), max_age=SESSION_SECONDS, httponly=True,
+                            samesite="lax", secure=self.settings.public_url.startswith("https://"), path="/")
 
     def read_cookie(self, value: str | None) -> str | None:
         try:
@@ -420,8 +427,7 @@ class AccountPages:
                 self.limiter.fail(ip)
                 return page(request, title, login_form + f"<div class='err'>{t(lang, 'wrong_credentials')}</div></form>", 400)
             response = page(request, title, upload_form)
-            response.set_cookie(SESSION_COOKIE, self.make_cookie(uid), max_age=SESSION_SECONDS, httponly=True,
-                                samesite="strict", secure=self.settings.public_url.startswith("https://"), path="/upload")
+            self.set_session(response, uid)
             return response
         if not user_id:
             return page(request, title, login_form + "</form>", 401)

@@ -35,7 +35,7 @@ Railway builds from the GitHub repo and gives you a volume and an HTTPS address.
    The server sets the Telegram webhook itself on startup (the address must be https). Only `COACH_*` names are read; the old `KOC_*` names are ignored.
 
 6. After the redeploy, open `<address>/health` in a browser. You should see `{"status":"ok"}`.
-7. Give the student the **connector address** (`<address>/mcp`) and the **invite code**, then the [Connect from a phone](CONNECT.md) guide ([Türkçe](CONNECT.tr.md)).
+7. Send the student one link: `<address>/start?invite=<code>`. The getting-started page explains the product, creates the account and walks through connecting Claude, the first chat and Telegram, ticking each step off by itself. The [Connect from a phone](CONNECT.md) guide ([Türkçe](CONNECT.tr.md)) covers the same steps in more detail.
 
 ### Your own domain (optional)
 
@@ -89,7 +89,7 @@ To revoke all of a user's connections: `DELETE FROM oauth_tokens WHERE user_id =
 
 ## Upgrading from the first (Turkish-named) version
 
-On startup the server renames `calisma_kocu.sqlite3` to `coach.sqlite3` and `oturum.key` to `session.key`, migrates Telegram links and replaces the vault's `.agents/skills/calisma-kocu` with `study-coach`. Routes changed: `/yukle` → `/upload`, `/hesap/...` → `/account/...`, `/saglik` → `/health`. Bot commands are now English (`/today`, `/time`, `/mute`, `/unmute`, `/unlink`). Connectors pick up the new tool names on their own.
+On startup the server renames `calisma_kocu.sqlite3` to `coach.sqlite3` and `oturum.key` to `session.key`, migrates Telegram links and replaces the vault's `.agents/skills/calisma-kocu` with `study-coach`. Routes changed: `/` now redirects to the new `/start` page, `/yukle` → `/upload`, `/hesap/...` → `/account/...`, `/saglik` → `/health`. Bot commands are now English (`/today`, `/time`, `/mute`, `/unmute`, `/unlink`). Connectors pick up the new tool names on their own.
 
 ## avenoxbeyin updates
 

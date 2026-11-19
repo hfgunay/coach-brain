@@ -86,10 +86,6 @@ MESSAGES: dict[str, dict[str, str]] = {
                       "tr": "Koça \"yüklediğime bakalım\" yaz."},
     "upload_another": {"en": "Upload another", "tr": "Bir tane daha yükle"},
     "bot_not_ready": {"en": "The bot is not ready yet.", "tr": "Bot hazır değil."},
-    # --- home --------------------------------------------------------------
-    "home_intro": {"en": "Add it to Claude or ChatGPT as a custom connector:",
-                   "tr": "Claude ya da ChatGPT'ye özel bağlayıcı olarak ekle:"},
-    "home_upload": {"en": "Upload a question or notes", "tr": "Soru ya da ders notu yükle"},
     # --- Telegram bot ------------------------------------------------------
     "tg_help": {"en": "I'm your study coach's reminder bot.\n\n"
                       "• Send a photo of a question, a PDF or your notes: I save it to your vault and your coach "
@@ -198,3 +194,82 @@ def from_accept_language(header: str | None) -> str:
         if normalize(code):
             choices.append((-q, i, normalize(code)))
     return min(choices)[2] if choices else DEFAULT
+
+
+# --- getting-started page (/start) ------------------------------------------------
+MESSAGES.update({
+    "ob_title": {"en": "Get started", "tr": "Başlangıç"},
+    "ob_hero": {"en": "A study coach that remembers you", "tr": "Seni hatırlayan çalışma koçu"},
+    "ob_hero_sub": {"en": "You study with Claude. Your coach keeps your notes, mistakes and plan, and picks up "
+                          "where you left off every time.",
+                    "tr": "Claude'la çalışırsın. Koçun notlarını, yanlışlarını ve planını saklar, her seferinde "
+                          "kaldığın yerden devam eder."},
+    "ob_feat_memory": {"en": "<b>Remembers you.</b> Your exam, your weak topics, where you left off.",
+                       "tr": "<b>Seni hatırlar.</b> Sınavını, zayıf konularını, kaldığın yeri."},
+    "ob_feat_mistakes": {"en": "<b>Learns from your mistakes.</b> Send a photo of a question you missed; it takes "
+                               "a note and asks again when it's time to review.",
+                         "tr": "<b>Yanlışlarından öğrenir.</b> Yapamadığın sorunun fotoğrafını at; not alır, "
+                               "tekrar zamanı gelince yeniden sorar."},
+    "ob_feat_plan": {"en": "<b>Plans with you.</b> Daily tasks, a morning list and an evening check.",
+                     "tr": "<b>Seninle plan yapar.</b> Günlük görevler, sabah liste, akşam kontrol."},
+    "ob_needs": {"en": "All you need is a free Claude account. Three steps, about five minutes.",
+                 "tr": "Tek ihtiyacın ücretsiz bir Claude hesabı. Üç adım, yaklaşık beş dakika."},
+    "ob_signup_button": {"en": "Create my account", "tr": "Hesabımı aç"},
+    "ob_have_account": {"en": "I already have an account", "tr": "Zaten hesabım var"},
+    "ob_new_account": {"en": "Create a new account", "tr": "Yeni hesap aç"},
+    "ob_remember_hint": {"en": "Remember this email and password: Claude will ask for them once more.",
+                         "tr": "Bu e-postayı ve şifreyi unutma: Claude bir kez daha soracak."},
+    "ob_hello": {"en": "Welcome 👋", "tr": "Hoş geldin 👋"},
+    "ob_progress": {"en": "{done} of {total} steps done", "tr": "{total} adımdan {done} tamam"},
+    "ob_step_connect": {"en": "Connect your coach to Claude", "tr": "Koçunu Claude'a bağla"},
+    "ob_connect_1": {"en": "Copy this address:", "tr": "Bu adresi kopyala:"},
+    "ob_copy": {"en": "Copy", "tr": "Kopyala"},
+    "ob_copied": {"en": "Copied ✓", "tr": "Kopyalandı ✓"},
+    "ob_connect_2": {"en": "In Claude open <b>Settings → Connectors</b> and tap <b>Add custom connector</b>.",
+                     "tr": "Claude'da <b>Ayarlar → Bağlayıcılar</b>'ı aç ve <b>Özel bağlayıcı ekle</b>'ye bas."},
+    "ob_open_connectors": {"en": "Open Claude settings", "tr": "Claude ayarlarını aç"},
+    "ob_connect_3": {"en": "Name: <b>{name}</b>. URL: paste the address. Then tap <b>Add</b> and <b>Connect</b>.",
+                     "tr": "Ad: <b>{name}</b>. URL: kopyaladığın adres. Sonra <b>Ekle</b> ve <b>Bağlan</b>."},
+    "ob_connect_4": {"en": "A sign-in page opens. Use the <b>Sign in</b> tab with <b>{email}</b> and your password.",
+                     "tr": "Bir giriş sayfası açılır. <b>Giriş</b> sekmesinde <b>{email}</b> ve şifrenle gir."},
+    "ob_connect_tip": {"en": "On a phone, do this in Safari rather than the Claude app. The connector then shows "
+                             "up in the app by itself.",
+                       "tr": "Telefondaysan bunu Claude uygulaması yerine Safari'den yap. Bağlayıcı uygulamaya "
+                             "kendiliğinden gelir."},
+    "ob_waiting": {"en": "This step turns green by itself once you're connected.",
+                   "tr": "Bağlanınca bu adım kendiliğinden yeşile döner."},
+    "ob_step_chat": {"en": "Say hi to your coach", "tr": "Koçunla tanış"},
+    "ob_chat_1": {"en": "Open a new chat in Claude. Under <b>+ → Connectors</b>, make sure <b>{name}</b> is on.",
+                  "tr": "Claude'da yeni bir sohbet aç. <b>+ → Bağlayıcılar</b>'da <b>{name}</b> açık olsun."},
+    "ob_chat_2": {"en": "Send this, or anything in your own words:",
+                  "tr": "Şunu gönder ya da kendi cümlelerinle bir şey yaz:"},
+    "ob_first_message": {"en": "Hi! Be my study coach. Get to know me first, then let's make a study plan together.",
+                         "tr": "Merhaba! Çalışma koçum ol. Önce beni tanı, sonra birlikte bir çalışma planı "
+                               "yapalım."},
+    "ob_open_claude": {"en": "Open Claude", "tr": "Claude'u aç"},
+    "ob_chat_tip": {"en": "The first time, Claude asks permission to use the coach's tools. Choose "
+                          "<b>Always allow</b>.",
+                    "tr": "İlk seferde Claude koçun araçlarını kullanmak için izin ister. <b>Her zaman izin "
+                          "ver</b>'i seç."},
+    "ob_step_telegram": {"en": "Get reminders on Telegram", "tr": "Telegram'dan hatırlatma al"},
+    "ob_optional": {"en": "optional", "tr": "isteğe bağlı"},
+    "ob_telegram_1": {"en": "A morning list of today's reviews and tasks, and an evening check with buttons. You "
+                            "can send question photos and PDFs to the bot too.",
+                      "tr": "Sabah günün tekrar ve görevleri, akşam düğmeli kontrol. Soru fotoğraflarını ve "
+                            "PDF'leri de bota atabilirsin."},
+    "ob_telegram_2": {"en": "Telegram opens. Tap <b>Start</b>.", "tr": "Telegram açılır. <b>Başlat</b>'a bas."},
+    "ob_step_upload": {"en": "Add the upload shortcut", "tr": "Yükleme kısayolunu ekle"},
+    "ob_upload_1": {"en": "Claude can't pass files from the chat to your coach. Upload question photos and notes "
+                          "from this page instead.",
+                    "tr": "Claude sohbete attığın dosyayı koçuna aktaramıyor. Soru fotoğraflarını ve notları bu "
+                          "sayfadan yükle."},
+    "ob_upload_2": {"en": "On iPhone: open it in Safari, then Share → <b>Add to Home Screen</b>.",
+                    "tr": "iPhone'da: Safari'de aç, sonra Paylaş → <b>Ana Ekrana Ekle</b>."},
+    "ob_open_upload": {"en": "Open the upload page", "tr": "Yükleme sayfasını aç"},
+    "ob_done_title": {"en": "You're all set 🎉", "tr": "Hazırsın 🎉"},
+    "ob_done_text": {"en": "From now on, just open Claude and write to your coach. It remembers where you left off.",
+                     "tr": "Bundan sonra Claude'u açıp koçuna yazman yeterli. Kaldığın yeri hatırlar."},
+    "ob_sign_out": {"en": "Sign out", "tr": "Çıkış yap"},
+    "tg_next": {"en": "Next: open Claude and say hi to your coach. Your steps: {url}",
+                "tr": "Sırada: Claude'u aç ve koçunla tanış. Adımların: {url}"},
+})

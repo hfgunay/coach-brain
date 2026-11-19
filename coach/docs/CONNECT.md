@@ -1,5 +1,7 @@
 # Connect from a phone (for students)
 
+The easiest way: open the `/start` link you were given. That page creates your account and shows each step below, ticking them off as you go. This guide is the same steps in more detail.
+
 You only do this once; it takes about 5 minutes. You'll be given two things:
 
 - The **connector address**, e.g. `https://coach-production.up.railway.app/mcp`

@@ -106,6 +106,8 @@ def test_telegram_linking_reminders_and_buttons(env):
 
     _write(url, 555, f"/start {code}")
     assert "Connected" in fake.sent()[-1]["text"] and "Europe/Istanbul" in fake.sent()[-1]["text"]
+    assert f"{url}/start" in fake.sent()[-1]["text"]  # points back to the getting-started steps
+    assert c.get("/start/status").json()["telegram"] is True
     _write(url, 556, f"/start {code}")  # the code is single use
     assert "invalid" in fake.sent()[-1]["text"]
 
