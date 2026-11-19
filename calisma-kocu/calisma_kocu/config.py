@@ -10,6 +10,18 @@ def _list(value: str | None) -> list[str]:
     return [item.strip() for item in (value or "").split(",") if item.strip()]
 
 
+def _ortam(kaynak) -> dict:
+    """Değişkenlerin İngilizce adlarını (COACH_*) eski adlara (KOC_*) eşler.
+
+    İkisi birden verilirse COACH_* kazanır. Eski KOC_* adları geçiş süresince çalışmaya devam eder.
+    """
+    env = dict(kaynak)
+    for ad, deger in kaynak.items():
+        if ad.startswith("COACH_"):
+            env["KOC_" + ad[len("COACH_"):]] = deger
+    return env
+
+
 def _adres(env: os._Environ | dict, varsayilan: str) -> str:
     """KOC_PUBLIC_URL'i düzgün bir kök adrese çevirir.
 
@@ -68,8 +80,8 @@ class Ayarlar:
         return self.data_dir / "state"
 
     @classmethod
-    def ortamdan(cls) -> "Ayarlar":
-        env = os.environ
+    def ortamdan(cls, kaynak: dict | None = None) -> "Ayarlar":
+        env = _ortam(os.environ if kaynak is None else kaynak)
         return cls(
             public_url=_adres(env, cls.public_url),
             data_dir=Path(env.get("KOC_DATA_DIR", "./data")),

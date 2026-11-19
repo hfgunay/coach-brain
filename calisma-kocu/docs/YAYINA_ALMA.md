@@ -17,7 +17,7 @@ Railway GitHub reposundan otomatik derler, disk (volume) ve HTTPS adresi verir. 
    - Ek ayar gerekmez: kökteki `railway.json` Dockerfile yolunu (`calisma-kocu/Dockerfile`) Railway'e kendisi söyler.
 3. Servise sağ tıklayın (telefonda uzun basın) → **Attach Volume** → mount path `/data`.
 4. **Settings → Networking → Generate Domain**. Çıkan adresi kopyalayın, örn. `https://calisma-kocu-production.up.railway.app`.
-5. **Variables** sekmesine ekleyin:
+5. **Variables** sekmesine ekleyin. Her `KOC_X` değişkeni İngilizce adıyla `COACH_X` olarak da girilebilir (ikisi birden varsa `COACH_X` geçerlidir):
 
    | Değişken | Değer |
    | --- | --- |

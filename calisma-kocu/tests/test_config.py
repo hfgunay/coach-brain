@@ -18,3 +18,11 @@ def test_yerel_adres_http():
 def test_railway_alan_adi_yedek():
     assert _adres({"RAILWAY_PUBLIC_DOMAIN": "x.up.railway.app"}, V) == "https://x.up.railway.app"
     assert _adres({}, V) == V
+
+
+def test_ingilizce_degisken_adlari():
+    a = Ayarlar.ortamdan({"COACH_TELEGRAM_TOKEN": "yeni", "KOC_TELEGRAM_TOKEN": "eski",
+                          "COACH_PUBLIC_URL": "x.up.railway.app", "KOC_SABAH_SAATI": "09:00"})
+    assert a.telegram_token == "yeni"
+    assert a.public_url == "https://x.up.railway.app"
+    assert a.sabah_saati == "09:00"
