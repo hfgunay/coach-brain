@@ -1,8 +1,8 @@
-"""Kullanıcının Markdown klasörünü WebDAV ile açar (Obsidian + Remotely Save için).
+"""Serves the user's Markdown folder over WebDAV (for Obsidian + Remotely Save).
 
-Her kullanıcı yalnız kendi klasörünü görür: kimlik doğrulayıcı kullanıcıyı bulur,
-dosya sağlayıcısı kök klasörü o kullanıcının klasörüne kilitler.
-Şifre hesap şifresi değil, /hesap/obsidian sayfasında üretilen uygulama şifresidir.
+Each user only sees their own folder: the authenticator finds the user and the file provider locks
+the root folder to that user's folder. The password is not the account password but the app password
+created on the /account/obsidian page.
 """
 from __future__ import annotations
 
@@ -20,33 +20,32 @@ from wsgidav.wsgidav_app import WsgiDAVApp
 
 from .db import DB
 
-_ANAHTAR = "calisma_kocu.user_id"
-# Kasanın yönetilen çalışma dosyaları iPad'e eşitlenmez ve oradan değiştirilemez; aksi halde
-# avenoxbeyin güncellemesi "managed file changed" çakışmasıyla durur. Notlar, Companion,
-# görevler ve Ekler eşitlenir.
-GIZLI_KOK = {"beyin.py", "AGENTS.md", "CLAUDE.md"}
+_KEY = "coach.user_id"
+# The vault's managed engine files are not synced to the iPad and can't be changed from there; otherwise an
+# avenoxbeyin update stops with a "managed file changed" conflict. Notes, Companion, tasks and attachments sync.
+HIDDEN_ROOT = {"beyin.py", "AGENTS.md", "CLAUDE.md"}
 
 
-def _gizli(parts: list[str]) -> bool:
-    return any(p.startswith(".") for p in parts) or (len(parts) == 1 and parts[0] in GIZLI_KOK)
+def _hidden(parts: list[str]) -> bool:
+    return any(p.startswith(".") for p in parts) or (len(parts) == 1 and parts[0] in HIDDEN_ROOT)
 
 
-class _Klasor(FolderResource):
+class _Folder(FolderResource):
     def get_member_names(self):
-        kok = self.path.strip("/") == ""
-        return [n for n in super().get_member_names() if not n.startswith(".") and not (kok and n in GIZLI_KOK)]
+        root = self.path.strip("/") == ""
+        return [n for n in super().get_member_names() if not n.startswith(".") and not (root and n in HIDDEN_ROOT)]
 
 
-class KullaniciKlasoru(FilesystemProvider):
+class UserFolder(FilesystemProvider):
     def _loc_to_file_path(self, path: str, environ: dict | None = None):
-        user_id = (environ or {}).get(_ANAHTAR)
+        user_id = (environ or {}).get(_KEY)
         if not user_id:
             raise DAVError(HTTP_FORBIDDEN)
         root = Path(self.root_folder_path) / user_id
         root.mkdir(parents=True, exist_ok=True)
         root_real = os.path.realpath(root)
         parts = [p for p in path.strip("/").split("/") if p]
-        if _gizli(parts):
+        if _hidden(parts):
             raise DAVError(HTTP_NOT_FOUND)
         file_path = os.path.abspath(os.path.join(root, *parts))
         real = os.path.realpath(file_path)
@@ -59,57 +58,57 @@ class KullaniciKlasoru(FilesystemProvider):
         fp = self._loc_to_file_path(path, environ)
         if not os.path.exists(fp) or os.path.islink(fp):
             return None
-        return _Klasor(path, environ, fp) if os.path.isdir(fp) else FileResource(path, environ, fp)
+        return _Folder(path, environ, fp) if os.path.isdir(fp) else FileResource(path, environ, fp)
 
 
-class HesapDogrulayici(BaseDomainController):
+class AccountAuthenticator(BaseDomainController):
     def __init__(self, wsgidav_app, config):
         super().__init__(wsgidav_app, config)
-        self.db: DB = config["calisma_kocu_db"]
+        self.db: DB = config["coach_db"]
 
     def get_domain_realm(self, path_info, environ):
-        return "Calisma Kocu"  # ASCII: wsgidav 401 gövdesinin uzunluğunu karakterle hesaplıyor
+        return "Study Coach"  # ASCII: wsgidav computes the 401 body length in characters
 
     def require_authentication(self, realm, environ):
         return True
 
     def basic_auth_user(self, realm, user_name, password, environ):
-        user_id = self.db.dav_giris(user_name, password)
+        user_id = self.db.dav_login(user_name, password)
         if not user_id:
             return False
-        environ[_ANAHTAR] = user_id
+        environ[_KEY] = user_id
         return True
 
     def supports_http_digest_auth(self):
         return False
 
 
-def webdav_uygulamasi(db: DB, vault_root: Path):
+def webdav_app(db: DB, vault_root: Path):
     vault_root.mkdir(parents=True, exist_ok=True)
     config = {
-        "provider_mapping": {"/": KullaniciKlasoru(str(vault_root))},
+        "provider_mapping": {"/": UserFolder(str(vault_root))},
         "http_authenticator": {
-            "domain_controller": HesapDogrulayici,
+            "domain_controller": AccountAuthenticator,
             "accept_basic": True,
             "accept_digest": False,
             "default_to_digest": False,
         },
-        # Dizin tarayıcısı ve CORS yok: istemci Obsidian eklentisi, tarayıcı değil.
+        # No directory browser and no CORS: the client is the Obsidian plugin, not a browser.
         "middleware_stack": [ErrorPrinter, HTTPAuthenticator, RequestResolver],
-        "calisma_kocu_db": db,
+        "coach_db": db,
         "verbose": 1,
         "logging": {"enable": False},
         "lock_storage": True,
         "property_manager": True,
         "hotfixes": {"re_encode_path_info": True},
     }
-    return _YolKorumasi(WSGIMiddleware(WsgiDAVApp(config)))
+    return _PathGuard(WSGIMiddleware(WsgiDAVApp(config)))
 
 
-class _YolKorumasi:
-    """`..` içeren yolları WebDAV'a hiç ulaştırmadan reddeder.
+class _PathGuard:
+    """Rejects paths containing `..` before they reach WebDAV.
 
-    wsgidav bu yolları zaten reddediyor ama boş gövdeyle yanlış Content-Length gönderiyor.
+    wsgidav rejects them too, but sends a wrong Content-Length with an empty body.
     """
 
     def __init__(self, app):

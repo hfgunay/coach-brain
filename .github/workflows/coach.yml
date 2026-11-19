@@ -1,11 +1,11 @@
-name: Çalışma Koçu sunucusu
+name: Study coach server
 
 on:
   pull_request:
-    paths: ['calisma-kocu/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/calisma-kocu.yml']
+    paths: ['coach/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/coach.yml']
   push:
     branches: [main]
-    paths: ['calisma-kocu/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/calisma-kocu.yml']
+    paths: ['coach/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/coach.yml']
 
 jobs:
   test:
@@ -15,7 +15,7 @@ jobs:
         python: ['3.11', '3.12', '3.13']
     defaults:
       run:
-        working-directory: calisma-kocu
+        working-directory: coach
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
