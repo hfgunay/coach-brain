@@ -36,6 +36,11 @@ def test_getting_started_walks_through_setup(base):  # noqa: F811
     token, _, _ = _connect(base, "new@example.com", mode="login", lang="en")
     assert c.get("/start/status").json()["connected"] is True
     assert "1 of 2 steps done" in c.get("/start").text
+    # The language switch at the top changes the page and is remembered for the account.
+    r = c.get("/start?lang=tr")
+    assert "class='on' href='?lang=tr'>Türkçe" in r.text and "2 adımdan 1 tamam" in r.text
+    assert "2 adımdan 1 tamam" in c.get("/start").text
+    c.get("/start?lang=en")
 
     # The first start_session ticks off "say hi to your coach" and the page celebrates.
     asyncio.run(_tools(base, token, [("start_session", {})]))

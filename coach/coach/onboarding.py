@@ -9,17 +9,22 @@ from __future__ import annotations
 
 import html
 import json
+from urllib.parse import urlencode
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
 
 from .auth import SESSION_COOKIE, AccountPages, page, request_lang
-from .i18n import normalize, t
+from .i18n import LANGUAGES, normalize, t
 
 CLAUDE_CONNECTORS = "https://claude.ai/settings/connectors"
 CLAUDE_NEW_CHAT = "https://claude.ai/new"
 
 _CSS = """
+.lang{display:flex;gap:4px;background:#8882;border-radius:99px;padding:3px;width:max-content;margin:0 0 18px auto}
+.lang a{padding:5px 12px;border-radius:99px;font-size:13px;color:var(--fg);text-decoration:none}
+.lang a.on{background:var(--card);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.langs{display:none}
 .hero{padding:8px 4px 20px}.hero h1{font-size:28px;line-height:1.2;margin:0 0 10px}
 .hero p{color:var(--muted);margin:0}
 .feats{list-style:none;padding:0;margin:20px 0 0}.feats li{display:flex;gap:12px;margin:0 0 14px;font-size:15px}
@@ -85,6 +90,16 @@ if (state && JSON.parse(state).pending) { setInterval(check, 4000); document.add
 """
 
 
+def _language_switch(request: Request, lang: str) -> str:
+    """A visible language choice at the top; the chosen language is remembered in a cookie (see page())."""
+    keep = {k: v for k, v in request.query_params.items() if k != "lang"}
+    links = []
+    for code, name in LANGUAGES.items():
+        query = html.escape(urlencode({**keep, "lang": code}))
+        links.append(f"<a class='{'on' if code == lang else ''}' href='?{query}'>{name}</a>")
+    return f"<nav class='lang'>{''.join(links)}</nav>"
+
+
 class GettingStarted:
     def __init__(self, pages: AccountPages, public_url: str):
         self.pages, self.db, self.public_url = pages, pages.db, public_url
@@ -108,6 +123,10 @@ class GettingStarted:
         user_id = self.pages.read_cookie(request.cookies.get(SESSION_COOKIE))
         if request.method == "GET":
             if user_id:
+                if normalize(request.query_params.get("lang")):
+                    # Picking a language here also switches the Telegram bot's language.
+                    self.db.x("UPDATE users SET lang = ? WHERE id = ?", (lang, user_id))
+                    self.db.x("UPDATE channel_links SET lang = ? WHERE user_id = ?", (lang, user_id))
                 return self._steps(request, lang, user_id)
             mode = "login" if request.query_params.get("mode") == "login" else "signup"
             return self._welcome(request, lang, mode, invite=request.query_params.get("invite", ""))
@@ -166,7 +185,7 @@ class GettingStarted:
             f"<li><span class='ic'>📸</span><span>{t(lang, 'ob_feat_mistakes')}</span></li>"
             f"<li><span class='ic'>📅</span><span>{t(lang, 'ob_feat_plan')}</span></li></ul></div>")
         needs = f"<p class='needs'>{t(lang, 'ob_needs')}</p>" if signup else ""
-        return page(request, t(lang, "app_name"), hero + form + needs, status,
+        return page(request, t(lang, "app_name"), _language_switch(request, lang) + hero + form + needs, status,
                     head=f"<style>{_CSS}</style>", bare=True)
 
     # --- signed in: the checklist ------------------------------------------------------------
@@ -229,7 +248,7 @@ class GettingStarted:
                      f"{t(lang, 'ob_open_claude')} ↗</a></div>" if finished_all else "")
         percent = round(100 * done / len(tracked))
         body = (
-            f"<div class='top'><h1>{t(lang, 'ob_hello')}</h1>"
+            _language_switch(request, lang) + f"<div class='top'><h1>{t(lang, 'ob_hello')}</h1>"
             "<form method='post'><input type='hidden' name='action' value='logout'>"
             f"<button class='link' type='submit'>{t(lang, 'ob_sign_out')}</button></form></div>"
             f"<div class='bar'><span style='width:{percent}%'></span></div>"
