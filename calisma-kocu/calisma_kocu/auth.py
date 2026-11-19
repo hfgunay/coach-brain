@@ -229,7 +229,7 @@ def _form(istek: str, mod: str, hata: str = "", email: str = "", davet_gerekli: 
 
 CEREZ = "calisma_kocu_oturum"
 CEREZ_SURESI = 90 * 24 * 3600
-MAKS_YUKLEME = 25 * 1024 * 1024
+MAKS_YUKLEME = 100 * 1024 * 1024  # ders kitabı PDF'leri
 
 
 class HesapSayfalari:
@@ -400,7 +400,7 @@ class HesapSayfalari:
                 continue
             veri = await item.read()
             if len(veri) > MAKS_YUKLEME:
-                return sayfa("Yükle", yukleme_formu + "<div class='err'>Dosya 25 MB'tan büyük.</div>", 413)
+                return sayfa("Yükle", yukleme_formu + "<div class='err'>Dosya 100 MB'tan büyük.</div>", 413)
             if veri:
                 dosyalar.append((item.filename or "foto.jpg", veri))
         if not dosyalar:

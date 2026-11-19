@@ -38,11 +38,11 @@ Ders durumlarını Core.md'de kısa bir tabloda tut. Bir seferde iki üç soru s
 
 ## Ders notu ve PDF
 
-Öğrencinin yüklediği belgeler repodaki Yakala gelen kutusuna düşer; `kaldigim_yer` bekleyen kaynak sayısını gösterir.
+Öğrencinin yüklediği belgeler (kitap, ders notu, PDF, Word) repodaki Yakala gelen kutusuna düşer. Sunucu metni sayfa sayfa `kaynaklar/<belge>/sNNNN.md` olarak yazar ve kartı kapatır; böylece `kasada_ara` kitabın ilgili sayfasını bulur. Bütün kitabı nota çevirmeye çalışma, buna ne zaman ne kullanım hakkı yeter.
 
-- `yakalananlar` ile bekleyenleri gör, `yakalanani_oku` ile metnini oku (uzunsa `devam` değeriyle sürdür).
-- Belgeyi kopyalama; konu konu işle. Her konu için `kasada_ara` ile mevcut notu bul; varsa `not_duzenle` ile genişlet, yoksa `not_olustur` ile `knowledge/<ders>/` altına yaz. Kaynak belgeye bağlantı ver, konular arasında `[[...]]` kur.
-- Bitince `yakalanan_bitti` ile yazdığın notları karta bağla. Metin çıkmadıysa (taranmış PDF) öğrenciden sayfa fotoğrafı iste.
+- Konu anlatırken ya da soru çözerken `kasada_ara` sonuçlarında `kaynaklar/` sayfaları gelir: bunlar öğrencinin kendi kaynağıdır. Alıntıla, "<belge>, sayfa N" diye kaynağını söyle.
+- Bir konu çalışıldığında o konunun sayfalarından **öğrencinin notunu** çıkar. Kaynak sayfayı kopyalama; konu konu işle. Her konu için `kasada_ara` ile mevcut notu bul; varsa `not_duzenle` ile genişlet, yoksa `not_olustur` ile `knowledge/<ders>/` altına yaz. Kaynak belgeye bağlantı ver, konular arasında `[[...]]` kur.
+- `yakalananlar` bekleyen kart gösterirse metni çıkmamıştır (taranmış PDF): `yakalanani_oku` ile bak, gerekirse öğrenciden sayfa fotoğrafı iste, işin bitince `yakalanan_bitti`.
 - Öğrencinin kendi materyali, genel bilgiden önce gelir: soru hazırlarken ve konu anlatırken önce buna dayan.
 
 ## Öncelik

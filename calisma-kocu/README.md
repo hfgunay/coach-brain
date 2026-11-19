@@ -26,7 +26,7 @@ iPhone / iPad                         Sunucu (tek konteyner)
 | --- | --- |
 | Profil, kurallar, kaldığı yer, açık konular | Kasadaki `🔮 850-Companion/` (Core, Kurallar, Last-Session, Threads) |
 | Sohbet başı bağlam, tarihi gelen tekrar ve görevler | Kasanın SessionStart hook'u (`.claude/scripts/beyin_v3_hook.py`) |
-| Ders notu, PDF, Word | Repodaki Yakala gelen kutusu (`📥 000-Inbox/Yakala/`); koç metni okuyup `knowledge/` notlarına çevirir |
+| Ders notu, kitap PDF'i, Word | Repodaki Yakala gelen kutusu (`📥 000-Inbox/Yakala/`). Sunucu metni sayfa sayfa `kaynaklar/<belge>/` altına düz Markdown yazar, motorun kendi araması bulur; koç konu çalışıldıkça not çıkarır |
 | Yapamadığı soru, konu notu | `note-create`; yeni notlar repo kuralı gereği `notes/` ya da `knowledge/` altında, klasörü koç seçer |
 | Tekrar zamanı | Notun `review_at` alanı; motor "Due reviews" olarak getirir |
 | Çalışma planı | `task-create` ile görevler, `project: sinav`, `due_at` |
@@ -54,7 +54,7 @@ iPhone / iPad                         Sunucu (tek konteyner)
 - OAuth 2.1 (DCR + PKCE), e-posta ve şifre ile hesap, davet kodu, giriş denemesi sınırı
 - Kullanıcı başına kasa kurulumu ve kasaya kilitleme (yol hilesi korumalı)
 - WebDAV (`/dav`): Obsidian eşitlemesi. Motorun yönettiği dosyalar (`beyin.py`, `AGENTS.md`, `CLAUDE.md`, nokta ile başlayan klasörler) gösterilmez ve yazılamaz.
-- `/yukle`: telefondan yükleme sayfası. Fotoğraflar `Ekler/`'e (2000 px JPEG), PDF/Word/metin `beyin.py yakala ekle` ile gelen kutusuna.
+- `/yukle`: telefondan yükleme sayfası. Fotoğraflar `Ekler/`'e (2000 px JPEG), PDF/Word/metin (100 MB'a kadar) `beyin.py yakala ekle` ile gelen kutusuna, metni aranabilir sayfalara.
 
 ## Yerelde çalıştırma
 
