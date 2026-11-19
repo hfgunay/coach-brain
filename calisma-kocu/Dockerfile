@@ -3,8 +3,8 @@
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    KOC_DATA_DIR=/data KOC_HOST=0.0.0.0 PORT=8000 \
-    KOC_BEYIN_KAYNAK=/opt/avenoxbeyin TZ=Europe/Istanbul
+    COACH_DATA_DIR=/data COACH_HOST=0.0.0.0 PORT=8000 \
+    COACH_ENGINE_DIR=/opt/avenoxbeyin TZ=Europe/Istanbul
 
 # avenoxbeyin motoru: her kullanıcının kasası bunun install_v3.py'si ile kurulur.
 COPY VERSION /opt/avenoxbeyin/VERSION

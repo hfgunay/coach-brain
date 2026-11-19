@@ -10,25 +10,13 @@ def _list(value: str | None) -> list[str]:
     return [item.strip() for item in (value or "").split(",") if item.strip()]
 
 
-def _ortam(kaynak) -> dict:
-    """Değişkenlerin İngilizce adlarını (COACH_*) eski adlara (KOC_*) eşler.
-
-    İkisi birden verilirse COACH_* kazanır. Eski KOC_* adları geçiş süresince çalışmaya devam eder.
-    """
-    env = dict(kaynak)
-    for ad, deger in kaynak.items():
-        if ad.startswith("COACH_"):
-            env["KOC_" + ad[len("COACH_"):]] = deger
-    return env
-
-
 def _adres(env: os._Environ | dict, varsayilan: str) -> str:
-    """KOC_PUBLIC_URL'i düzgün bir kök adrese çevirir.
+    """COACH_PUBLIC_URL'i düzgün bir kök adrese çevirir.
 
     Şema unutulursa https eklenir (yerel adreslerde http). Değişken hiç yoksa
     Railway'in kendi verdiği RAILWAY_PUBLIC_DOMAIN kullanılır.
     """
-    deger = (env.get("KOC_PUBLIC_URL") or "").strip()
+    deger = (env.get("COACH_PUBLIC_URL") or "").strip()
     if not deger and env.get("RAILWAY_PUBLIC_DOMAIN"):
         deger = env["RAILWAY_PUBLIC_DOMAIN"].strip()
     if not deger:
@@ -81,19 +69,19 @@ class Ayarlar:
 
     @classmethod
     def ortamdan(cls, kaynak: dict | None = None) -> "Ayarlar":
-        env = _ortam(os.environ if kaynak is None else kaynak)
+        env = os.environ if kaynak is None else kaynak
         return cls(
             public_url=_adres(env, cls.public_url),
-            data_dir=Path(env.get("KOC_DATA_DIR", "./data")),
-            host=env.get("KOC_HOST", cls.host),
-            port=int(env.get("PORT", env.get("KOC_PORT", cls.port))),
-            davet_kodlari=_list(env.get("KOC_DAVET_KODLARI")),
-            acik_kayit=env.get("KOC_ACIK_KAYIT", "").lower() in ("1", "true", "evet"),
-            izinli_hostlar=_list(env.get("KOC_IZINLI_HOSTLAR")),
-            telegram_token=env.get("KOC_TELEGRAM_TOKEN", "").strip(),
-            telegram_api=env.get("KOC_TELEGRAM_API", cls.telegram_api).rstrip("/"),
-            sabah_saati=env.get("KOC_SABAH_SAATI", cls.sabah_saati),
-            aksam_saati=env.get("KOC_AKSAM_SAATI", cls.aksam_saati),
-            **({"izinli_yonlendirmeler": _list(env["KOC_IZINLI_YONLENDIRMELER"])}
-               if env.get("KOC_IZINLI_YONLENDIRMELER") else {}),
+            data_dir=Path(env.get("COACH_DATA_DIR", "./data")),
+            host=env.get("COACH_HOST", cls.host),
+            port=int(env.get("PORT", env.get("COACH_PORT", cls.port))),
+            davet_kodlari=_list(env.get("COACH_INVITE_CODES")),
+            acik_kayit=env.get("COACH_OPEN_SIGNUP", "").lower() in ("1", "true", "evet"),
+            izinli_hostlar=_list(env.get("COACH_ALLOWED_HOSTS")),
+            telegram_token=env.get("COACH_TELEGRAM_TOKEN", "").strip(),
+            telegram_api=env.get("COACH_TELEGRAM_API", cls.telegram_api).rstrip("/"),
+            sabah_saati=env.get("COACH_MORNING_TIME", cls.sabah_saati),
+            aksam_saati=env.get("COACH_EVENING_TIME", cls.aksam_saati),
+            **({"izinli_yonlendirmeler": _list(env["COACH_ALLOWED_REDIRECTS"])}
+               if env.get("COACH_ALLOWED_REDIRECTS") else {}),
         )

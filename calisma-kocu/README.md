@@ -51,7 +51,7 @@ iPhone / iPad                         Sunucu (tek konteyner)
 
 ## Hatırlatma botu (isteğe bağlı)
 
-`KOC_TELEGRAM_TOKEN` verilirse sunucu bir Telegram botu çalıştırır. Bot dil modeli çağırmaz.
+`COACH_TELEGRAM_TOKEN` verilirse sunucu bir Telegram botu çalıştırır. Bot dil modeli çağırmaz.
 
 - **Sabah** (varsayılan 08:30): motorun `triage` çıktısındaki tarihi gelen tekrarlar (`review_at`) ve `tasks/` altındaki günü gelen görevler (`due_at`).
 - **Akşam** (varsayılan 21:30): günü gelen her görev için [✅ Bitti] [➡️ Yarına kaldı]. Düğme motorun `task-update` komutunu revision kontrolüyle çalıştırır.
@@ -75,10 +75,10 @@ cd calisma-kocu
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[test]"
 python -m pytest -q                      # gerçek kasa kurulumu, OAuth, MCP, ayrım, WebDAV, fotoğraf
-KOC_DAVET_KODLARI=deneme calisma-kocu     # http://localhost:8000
+COACH_INVITE_CODES=deneme calisma-kocu     # http://localhost:8000
 ```
 
-Sunucu motoru repo kökünden bulur (`calisma-kocu/..`). Başka bir yerdeyse `KOC_BEYIN_KAYNAK` ile avenoxbeyin kopyasını gösterin. Claude'a bağlamak için internetten erişilen bir HTTPS adresi gerekir (örn. `cloudflared tunnel --url http://localhost:8000`), adresi `KOC_PUBLIC_URL` olarak verin.
+Sunucu motoru repo kökünden bulur (`calisma-kocu/..`). Başka bir yerdeyse `COACH_ENGINE_DIR` ile avenoxbeyin kopyasını gösterin. Claude'a bağlamak için internetten erişilen bir HTTPS adresi gerekir (örn. `cloudflared tunnel --url http://localhost:8000`), adresi `COACH_PUBLIC_URL` olarak verin.
 
 ## Belgeler
 
