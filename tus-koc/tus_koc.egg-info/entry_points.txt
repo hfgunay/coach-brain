@@ -1,0 +1,2 @@
+[console_scripts]
+tus-koc = tus_koc.server:main

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tus-koc"
+version = "0.1.0"
+description = "TUS çalışma koçu için uzak MCP hafıza sunucusu (Obsidian uyumlu)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=2.3,<3",
+    "uvicorn[standard]>=0.30",
+    "starlette>=0.40",
+    "pyyaml>=6",
+    "wsgidav>=4.3,<5",
+    "a2wsgi>=1.10",
+    "tzdata",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+tus-koc = "tus_koc.server:main"
+
+[tool.setuptools]
+packages = ["tus_koc"]
+
+[tool.setuptools.package-data]
+tus_koc = ["talimatlar.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
