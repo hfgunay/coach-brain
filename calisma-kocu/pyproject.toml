@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "calisma-kocu"
+version = "0.2.0"
+description = "avenoxbeyin kasasını uzak MCP bağlayıcısı olarak sunan sınav ve ders çalışma koçu sunucusu"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=2.3,<3",
+    "uvicorn[standard]>=0.30",
+    "starlette>=0.40",
+    "pillow>=10",
+    "python-multipart>=0.0.9",
+    "wsgidav>=4.3,<5",
+    "a2wsgi>=1.10",
+    "tzdata",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+calisma-kocu = "calisma_kocu.server:main"
+
+[tool.setuptools]
+packages = ["calisma_kocu"]
+
+[tool.setuptools.package-data]
+calisma_kocu = ["skill/SKILL.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
