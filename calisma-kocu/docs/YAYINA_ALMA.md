@@ -14,7 +14,7 @@ Railway GitHub reposundan otomatik derler, disk (volume) ve HTTPS adresi verir. 
 1. [railway.com](https://railway.com) → GitHub ile giriş → **New Project** → **Deploy from GitHub repo** → `hfgunay/coach-brain`.
 2. Servisin **Settings** sekmesi:
    - **Root Directory**: boş bırakın (repo kökü). İmaj avenoxbeyin motorunu (`scripts/`, `template/`) da içerir.
-   - **Config file**: `calisma-kocu/railway.json` (Dockerfile yolu `calisma-kocu/Dockerfile` orada yazılı)
+   - Ek ayar gerekmez: kökteki `railway.json` Dockerfile yolunu (`calisma-kocu/Dockerfile`) Railway'e kendisi söyler.
 3. Servise sağ tıklayın (telefonda uzun basın) → **Attach Volume** → mount path `/data`.
 4. **Settings → Networking → Generate Domain**. Çıkan adresi kopyalayın, örn. `https://calisma-kocu-production.up.railway.app`.
 5. **Variables** sekmesine ekleyin:
