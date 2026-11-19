@@ -21,7 +21,7 @@ Railway GitHub reposundan otomatik derler, disk (volume) ve HTTPS adresi verir. 
 
    | Değişken | Değer |
    | --- | --- |
-   | `KOC_PUBLIC_URL` | 4. adımdaki adres, sonunda `/` olmadan |
+   | `KOC_PUBLIC_URL` | 4. adımdaki adres. `https://` unutulursa sunucu kendisi ekler; Railway'de boş bırakılırsa Railway'in verdiği alan adı kullanılır |
    | `KOC_DATA_DIR` | `/data` |
    | `KOC_DAVET_KODLARI` | Uzun, tahmin edilemez bir kod (virgülle birden fazla) |
    | `RAILWAY_RUN_UID` | `0` (volume'a yazabilmek için; imaj normalde root olmayan kullanıcıyla çalışır) |

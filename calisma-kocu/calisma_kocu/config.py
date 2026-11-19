@@ -10,6 +10,23 @@ def _list(value: str | None) -> list[str]:
     return [item.strip() for item in (value or "").split(",") if item.strip()]
 
 
+def _adres(env: os._Environ | dict, varsayilan: str) -> str:
+    """KOC_PUBLIC_URL'i düzgün bir kök adrese çevirir.
+
+    Şema unutulursa https eklenir (yerel adreslerde http). Değişken hiç yoksa
+    Railway'in kendi verdiği RAILWAY_PUBLIC_DOMAIN kullanılır.
+    """
+    deger = (env.get("KOC_PUBLIC_URL") or "").strip()
+    if not deger and env.get("RAILWAY_PUBLIC_DOMAIN"):
+        deger = env["RAILWAY_PUBLIC_DOMAIN"].strip()
+    if not deger:
+        return varsayilan
+    if "://" not in deger:
+        yerel = deger.split(":")[0] in ("localhost", "127.0.0.1", "0.0.0.0")
+        deger = ("http://" if yerel else "https://") + deger
+    return deger.rstrip("/")
+
+
 @dataclass(frozen=True)
 class Ayarlar:
     # Sunucunun dışarıdan görünen adresi, örn. https://koc.ornek.com (sonunda / yok).
@@ -54,7 +71,7 @@ class Ayarlar:
     def ortamdan(cls) -> "Ayarlar":
         env = os.environ
         return cls(
-            public_url=env.get("KOC_PUBLIC_URL", cls.public_url).rstrip("/"),
+            public_url=_adres(env, cls.public_url),
             data_dir=Path(env.get("KOC_DATA_DIR", "./data")),
             host=env.get("KOC_HOST", cls.host),
             port=int(env.get("PORT", env.get("KOC_PORT", cls.port))),
