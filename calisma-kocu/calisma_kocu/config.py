@@ -30,6 +30,12 @@ class Ayarlar:
         "claude.ai", "claude.com", "anthropic.com", "chatgpt.com", "openai.com", "localhost", "127.0.0.1"])
     # Arkada bir ters vekil (Caddy, Fly) varsa ek Host başlıkları.
     izinli_hostlar: list[str] = field(default_factory=list)
+    # Telegram hatırlatma botu (BotFather anahtarı). Boşsa bot kapalıdır.
+    telegram_token: str = ""
+    telegram_api: str = "https://api.telegram.org"
+    # Yeni bağlanan öğrencinin varsayılan hatırlatma saatleri (Europe/Istanbul); bottan değiştirilebilir.
+    sabah_saati: str = "08:30"
+    aksam_saati: str = "21:30"
 
     @property
     def db_path(self) -> Path:
@@ -55,6 +61,10 @@ class Ayarlar:
             davet_kodlari=_list(env.get("KOC_DAVET_KODLARI")),
             acik_kayit=env.get("KOC_ACIK_KAYIT", "").lower() in ("1", "true", "evet"),
             izinli_hostlar=_list(env.get("KOC_IZINLI_HOSTLAR")),
+            telegram_token=env.get("KOC_TELEGRAM_TOKEN", "").strip(),
+            telegram_api=env.get("KOC_TELEGRAM_API", cls.telegram_api).rstrip("/"),
+            sabah_saati=env.get("KOC_SABAH_SAATI", cls.sabah_saati),
+            aksam_saati=env.get("KOC_AKSAM_SAATI", cls.aksam_saati),
             **({"izinli_yonlendirmeler": _list(env["KOC_IZINLI_YONLENDIRMELER"])}
                if env.get("KOC_IZINLI_YONLENDIRMELER") else {}),
         )

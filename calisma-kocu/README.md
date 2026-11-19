@@ -49,6 +49,18 @@ iPhone / iPad                         Sunucu (tek konteyner)
 
 `calisma_kocu` MCP istemi koç skill'inin metnini verir.
 
+## Hatırlatma botu (isteğe bağlı)
+
+`KOC_TELEGRAM_TOKEN` verilirse sunucu bir Telegram botu çalıştırır. Bot dil modeli çağırmaz.
+
+- **Sabah** (varsayılan 08:30): motorun `triage` çıktısındaki tarihi gelen tekrarlar (`review_at`) ve `tasks/` altındaki günü gelen görevler (`due_at`).
+- **Akşam** (varsayılan 21:30): günü gelen her görev için [✅ Bitti] [➡️ Yarına kaldı]. Düğme motorun `task-update` komutunu revision kontrolüyle çalıştırır.
+- **Gelen kutusu:** bota atılan fotoğraf `Ekler/`'e, PDF/Word yükleme sayfasıyla aynı yoldan Yakala'ya ve `kaynaklar/`'a düşer (Bot API sınırı 20 MB).
+- Komutlar: `/bugun`, `/saat 08:30 21:30`, `/sessiz`, `/devam`, `/ayril`.
+- Bağlama: yükleme sayfasındaki "Telegram'a bağla" tek kullanımlık kodla `t.me/<bot>?start=<kod>` açar.
+
+Çekirdek (`hatirlatici.py`) kanaldan bağımsızdır; Telegram yalnız `telegram.py` adaptörüdür. Başka kanal (WhatsApp, kendi uygulamamız) aynı `Kanal` protokolünü uygular; Telegram'ı çıkarmak için ortam değişkenini kaldırmak yeter.
+
 ## Sunucuya ait olanlar
 
 - OAuth 2.1 (DCR + PKCE), e-posta ve şifre ile hesap, davet kodu, giriş denemesi sınırı
@@ -78,6 +90,6 @@ Sunucu motoru repo kökünden bulur (`calisma-kocu/..`). Başka bir yerdeyse `KO
 ## Bilinen sınırlar (v0.2)
 
 - Tek konteyner, tek kopya: SQLite, giriş sınırı ve MCP oturumları yerel.
-- Bildirim yok: MCP sohbeti sunucu başlatamaz. Hatırlatma ve fotoğraf için Telegram botu planlanıyor.
+- MCP sohbeti sunucu başlatamaz; proaktif hatırlatma Telegram botundan gelir (isteğe bağlı).
 - Şifre sıfırlama, ödeme ve kullanıcı başına disk kotası yok.
 - Aynı notu aynı anda hem Obsidian hem koç yazarsa: koçun yazması motorun sha kontrolüyle korunur, Obsidian tarafında son eşitleyen kazanır.

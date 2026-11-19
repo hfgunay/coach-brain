@@ -37,7 +37,14 @@ Claude, sohbete attığın dosyayı bağlayıcıya aktaramaz. Saklanacak soru fo
 2. Paylaş → **Ana Ekrana Ekle**. Artık telefonda bir "Yükle" simgesi var.
 3. Yapamadığın sorunun fotoğrafını ya da ders notunu oradan yükle, sonra koça "yüklediğime bakalım" yaz. Koç fotoğrafı görür, PDF'i okuyup senin notlarına çevirir.
 
-### 4. Her gün
+### 4. Telegram hatırlatmaları (isteğe bağlı)
+
+1. Yükleme sayfasının altındaki **Telegram'a bağla**'ya bas. Telegram açılır, **Başlat**'a bas.
+2. Bot sabah günün tekrar ve görevlerini yazar, akşam görevlerin bitip bitmediğini düğmeyle sorar.
+3. Soru fotoğrafını ya da 20 MB'a kadar PDF'i doğrudan bota da atabilirsin.
+4. Saatleri değiştirmek için bota `/saat 08:00 22:00`, bir süre susması için `/sessiz` yaz.
+
+### 5. Her gün
 
 1. Claude uygulamasında **Çalışma Koçu** projesinde yeni sohbet aç.
 2. Mesaj kutusundaki **+** → **Connectors** → **Çalışma Koçu** açık olsun.

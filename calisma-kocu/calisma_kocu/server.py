@@ -13,12 +13,14 @@ Uç noktalar:
 """
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 import re
 import shutil
 import subprocess
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import PurePath
 from typing import Annotated, Any
@@ -27,7 +29,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import Field
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount
 
 from mcp.server.auth.middleware.auth_context import get_access_token
@@ -36,10 +38,12 @@ from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 
-from .auth import KAPSAM, HesapSayfalari, Saglayici, sayfa
+from .auth import CEREZ, KAPSAM, HesapSayfalari, Saglayici, sayfa
 from .config import Ayarlar
 from .db import DB
+from .hatirlatici import Zamanlayici
 from .kasa import KOC_SKILL, Kasa, KasaHatasi
+from .telegram import Telegram
 from .webdav import webdav_uygulamasi
 
 log = logging.getLogger("calisma_kocu")
@@ -73,7 +77,7 @@ def uygulama_kur(ayarlar: Ayarlar | None = None):
         title="Çalışma Koçu",
         description="Sınava ya da derse çalışan öğrencinin avenoxbeyin ikinci beyni: notlar, görevler, tekrarlar ve oturum hafızası.",
         instructions=TALIMAT,
-        version="0.2.0",
+        version="0.3.0",
         auth_server_provider=saglayici,
         auth=AuthSettings(
             issuer_url=ayarlar.public_url,
@@ -362,8 +366,52 @@ def uygulama_kur(ayarlar: Ayarlar | None = None):
         allowed_origins=[ayarlar.public_url, "https://claude.ai", "https://chatgpt.com",
                          "http://localhost:*", "http://127.0.0.1:*"],
     )
+    # --- hatırlatma kanalı (isteğe bağlı) ------------------------------------
+    def kasa_ac(user_id: str) -> Kasa:
+        return Kasa(ayarlar.vault_root, ayarlar.state_root, user_id)
+
+    telegram = Telegram(ayarlar, db, kasa_ac, ekleri_kaydet) if ayarlar.telegram_token else None
+    zamanlayici = Zamanlayici(db, {telegram.ad: telegram} if telegram else {}, kasa_ac)
+    hesap.telegram_aktif = telegram is not None
+
+    if telegram is not None:
+        @mcp.custom_route("/telegram/webhook", methods=["POST"])
+        async def telegram_webhook(request: Request) -> Response:
+            return await telegram.webhook(request)
+
+        @mcp.custom_route("/yukle/telegram", methods=["GET"])
+        async def telegram_bagla(request: Request) -> Response:
+            user_id = hesap.cerez_coz(request.cookies.get(CEREZ))
+            if not user_id:
+                return RedirectResponse("/yukle", status_code=303)
+            if not telegram.kullanici_adi:
+                await telegram.kur()
+            adres = telegram.baglanti_adresi(user_id)
+            return RedirectResponse(adres, status_code=303) if adres else sayfa("Telegram", "<p>Bot hazır değil.</p>", 503)
+
     app = mcp.streamable_http_app(transport_security=guvenlik, host=ayarlar.host)
     app.router.routes.append(Mount("/dav", app=webdav_uygulamasi(db, ayarlar.vault_root)))
+    ic_omur = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def omur(a):
+        async with ic_omur(a):
+            gorev = None
+            if telegram is not None:
+                try:
+                    await telegram.kur()
+                except Exception:  # noqa: BLE001 - bot kurulamasa da koç çalışsın
+                    log.exception("Telegram kurulamadı")
+                gorev = asyncio.create_task(zamanlayici.calis())
+            try:
+                yield
+            finally:
+                if gorev is not None:
+                    gorev.cancel()
+
+    app.router.lifespan_context = omur
+    app.state.zamanlayici = zamanlayici
+    app.state.telegram = telegram
     return app
 
 

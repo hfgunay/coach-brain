@@ -236,6 +236,7 @@ class HesapSayfalari:
     def __init__(self, db: DB, saglayici: Saglayici, ayarlar: Ayarlar):
         self.db, self.saglayici, self.ayarlar = db, saglayici, ayarlar
         self.sinir = Sinirlayici()
+        self.telegram_aktif = False
         anahtar = ayarlar.data_dir / "oturum.key"
         if not anahtar.exists():
             anahtar.parent.mkdir(parents=True, exist_ok=True)
@@ -376,7 +377,9 @@ class HesapSayfalari:
             "<input type='file' name='dosya' accept='image/*,.pdf,.docx,.txt,.md,.csv' multiple required>"
             "<label for='neden'>Not (isteğe bağlı)</label>"
             "<input id='neden' name='neden' placeholder='örn. Endokrin ders notu, 3. hafta'>"
-            "<button type='submit'>Yükle</button></form>")
+            "<button type='submit'>Yükle</button></form>"
+            + ("<p class='muted' style='margin-top:20px'>Hatırlatmaları ve yüklemeyi Telegram'dan da yapabilirsin: "
+               "<a href='/yukle/telegram'>Telegram'a bağla</a></p>" if self.telegram_aktif else ""))
         if request.method == "GET":
             return sayfa("Yükle", yukleme_formu if user_id else giris_formu + "</form>")
         form = await request.form()
