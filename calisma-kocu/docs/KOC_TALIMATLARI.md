@@ -1,12 +1,12 @@
 # Koç talimatları
 
-Koçluk davranışının tek kaynağı [`tus_koc/skill/SKILL.md`](../tus_koc/skill/SKILL.md). Bu bir avenoxbeyin skill'idir: yeni mekanizma eklemez, kasadaki AGENTS.md ve beyin skill'inin hafıza protokolünü TUS çalışmasına uygular (tanışma, öncelik, görev olarak plan, yapamadığı soruların notu ve `review_at`).
+Koçluk davranışının tek kaynağı [`calisma_kocu/skill/SKILL.md`](../calisma_kocu/skill/SKILL.md). Bu bir avenoxbeyin skill'idir: yeni mekanizma eklemez, kasadaki AGENTS.md ve beyin skill'inin hafıza protokolünü sınav ve ders çalışmasına uygular (tanışma, öncelik, görev olarak plan, yapamadığı soruların notu ve `review_at`).
 
 Koça üç yoldan ulaşır:
 
-1. **Kasada**: sunucu her kasaya `.agents/skills/tus-koc/SKILL.md` olarak koyar ve dosya değişince günceller. Koç `talimatlari_oku` ile AGENTS.md, beyin skill'i ve bu skill'i okur.
+1. **Kasada**: sunucu her kasaya `.agents/skills/calisma-kocu/SKILL.md` olarak koyar ve dosya değişince günceller. Koç `talimatlari_oku` ile AGENTS.md, beyin skill'i ve bu skill'i okur.
 2. **Sunucu talimatı**: bağlanınca giden kısa metin (`server.py` içindeki `TALIMAT`): "ilk iş `kaldigim_yer`, protokolü bilmiyorsan `talimatlari_oku`".
-3. **MCP istemi**: `tus_kocu` aynı metni verir.
+3. **MCP istemi**: `calisma_kocu` aynı metni verir.
 
 Claude Projesine metin yapıştırmak gerekmez; projenin talimatına "Her sohbette önce kaldigim_yer, sonra talimatlari_oku" yazmak yeter.
 

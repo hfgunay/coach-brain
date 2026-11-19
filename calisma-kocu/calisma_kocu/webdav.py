@@ -20,7 +20,7 @@ from wsgidav.wsgidav_app import WsgiDAVApp
 
 from .db import DB
 
-_ANAHTAR = "tus_koc.user_id"
+_ANAHTAR = "calisma_kocu.user_id"
 # Kasanın yönetilen çalışma dosyaları iPad'e eşitlenmez ve oradan değiştirilemez; aksi halde
 # avenoxbeyin güncellemesi "managed file changed" çakışmasıyla durur. Notlar, Companion,
 # görevler ve Ekler eşitlenir.
@@ -65,10 +65,10 @@ class KullaniciKlasoru(FilesystemProvider):
 class HesapDogrulayici(BaseDomainController):
     def __init__(self, wsgidav_app, config):
         super().__init__(wsgidav_app, config)
-        self.db: DB = config["tus_koc_db"]
+        self.db: DB = config["calisma_kocu_db"]
 
     def get_domain_realm(self, path_info, environ):
-        return "TUS Koc"  # ASCII: wsgidav 401 gövdesinin uzunluğunu karakterle hesaplıyor
+        return "Calisma Kocu"  # ASCII: wsgidav 401 gövdesinin uzunluğunu karakterle hesaplıyor
 
     def require_authentication(self, realm, environ):
         return True
@@ -96,7 +96,7 @@ def webdav_uygulamasi(db: DB, vault_root: Path):
         },
         # Dizin tarayıcısı ve CORS yok: istemci Obsidian eklentisi, tarayıcı değil.
         "middleware_stack": [ErrorPrinter, HTTPAuthenticator, RequestResolver],
-        "tus_koc_db": db,
+        "calisma_kocu_db": db,
         "verbose": 1,
         "logging": {"enable": False},
         "lock_storage": True,

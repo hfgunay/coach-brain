@@ -1,6 +1,6 @@
-# TUS Koçu · avenoxbeyin'i telefondan kullanılır kılan uzak MCP sunucusu
+# Çalışma Koçu · avenoxbeyin'i telefondan kullanılır kılan uzak MCP sunucusu
 
-Sınava çalışan öğrenci için ikinci beyin. Öğrenci kendi Claude aboneliğini kullanır, bu sunucuyu **özel bağlayıcı** olarak ekler. Sunucu hiçbir dil modeli API'si çağırmaz; maliyeti barındırmadan ibarettir.
+Sınav ve ders çalışma odaklı ikinci beyin: soru çözülen her sınav ya da ders için. Öğrenci kendi Claude aboneliğini kullanır, bu sunucuyu **özel bağlayıcı** olarak ekler. Sunucu hiçbir dil modeli API'si çağırmaz; maliyeti barındırmadan ibarettir.
 
 **Hafıza motoru bu klasörde değil, repo kökündeki avenoxbeyin'dir.** Sunucu her kullanıcı için resmi `scripts/install_v3.py` ile gerçek bir avenoxbeyin V3 kasası kurar ve MCP araçlarını o kasanın kendi `beyin.py` komutlarına bağlar. Arama, not ve görev yazımı, revision ve sha çakışma kontrolü, tekrar tarihleri (`review_at`), görev bitiş tarihleri (`due_at`), Companion dosyaları, oturum sonuçları (receipt) ve öğrenim adayları motordan gelir. Burada ayrı bir hafıza, plan ya da hata defteri mantığı yoktur.
 
@@ -16,7 +16,7 @@ iPhone / iPad                         Sunucu (tek konteyner)
 │ Obsidian +   │ ◄────────────► │                                           │
 │ Remotely Save│                │ /data/vaults/<id>/  avenoxbeyin kasası     │
 └──────────────┘                │ /data/state/<id>/   motorun indeks/kilit   │
-                                │ /data/tus_koc.sqlite3  hesaplar + OAuth    │
+                                │ /data/calisma_kocu.sqlite3  hesaplar + OAuth    │
                                 └───────────────────────────────────────────┘
 ```
 
@@ -28,15 +28,15 @@ iPhone / iPad                         Sunucu (tek konteyner)
 | Sohbet başı bağlam, tarihi gelen tekrar ve görevler | Kasanın SessionStart hook'u (`.claude/scripts/beyin_v3_hook.py`) |
 | Yapamadığı soru, konu notu | `note-create`; yeni notlar repo kuralı gereği `notes/` ya da `knowledge/` altında, klasörü koç seçer |
 | Tekrar zamanı | Notun `review_at` alanı; motor "Due reviews" olarak getirir |
-| Çalışma planı | `task-create` ile görevler, `project: tus`, `due_at` |
-| TUS'a özgü davranış | Yalnız koç skill'i: [tus_koc/skill/SKILL.md](tus_koc/skill/SKILL.md) (kasaya `.agents/skills/tus-koc/` olarak konur) |
+| Çalışma planı | `task-create` ile görevler, `project: sinav`, `due_at` |
+| Koçluk davranışı | Yalnız koç skill'i: [calisma_kocu/skill/SKILL.md](calisma_kocu/skill/SKILL.md) (kasaya `.agents/skills/calisma-kocu/` olarak konur) |
 
 ## Araçlar
 
 | Araç | beyin karşılığı |
 | --- | --- |
 | `kaldigim_yer` | SessionStart hook bağlamı + oturum kimliği |
-| `talimatlari_oku` | Kasadaki AGENTS.md, beyin skill'i ve TUS koç skill'i |
+| `talimatlari_oku` | Kasadaki AGENTS.md, beyin skill'i ve çalışma koçu skill'i |
 | `kasada_ara` | `context` |
 | `not_oku`, `not_olustur`, `not_duzenle` | `note-read`, `note-create`, `note-edit` |
 | `gorev_olustur`, `gorev_guncelle` | `task-create`, `task-update` |
@@ -45,7 +45,7 @@ iPhone / iPad                         Sunucu (tek konteyner)
 | `kasa_durumu`, `son_sonuclar` | `triage`, `recap` |
 | `ekleri_listele`, `eki_goster` | Sunucuya ait: `/yukle` sayfasından gelen fotoğrafları gösterir (Claude araç argümanıyla görsel gönderemediği için) |
 
-`tus_kocu` MCP istemi koç skill'inin metnini verir.
+`calisma_kocu` MCP istemi koç skill'inin metnini verir.
 
 ## Sunucuya ait olanlar
 
@@ -57,14 +57,14 @@ iPhone / iPad                         Sunucu (tek konteyner)
 ## Yerelde çalıştırma
 
 ```bash
-cd tus-koc
+cd calisma-kocu
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[test]"
 python -m pytest -q                      # gerçek kasa kurulumu, OAuth, MCP, ayrım, WebDAV, fotoğraf
-TUS_KOC_DAVET_KODLARI=deneme tus-koc     # http://localhost:8000
+KOC_DAVET_KODLARI=deneme calisma-kocu     # http://localhost:8000
 ```
 
-Sunucu motoru repo kökünden bulur (`tus-koc/..`). Başka bir yerdeyse `TUS_KOC_BEYIN_KAYNAK` ile avenoxbeyin kopyasını gösterin. Claude'a bağlamak için internetten erişilen bir HTTPS adresi gerekir (örn. `cloudflared tunnel --url http://localhost:8000`), adresi `TUS_KOC_PUBLIC_URL` olarak verin.
+Sunucu motoru repo kökünden bulur (`calisma-kocu/..`). Başka bir yerdeyse `KOC_BEYIN_KAYNAK` ile avenoxbeyin kopyasını gösterin. Claude'a bağlamak için internetten erişilen bir HTTPS adresi gerekir (örn. `cloudflared tunnel --url http://localhost:8000`), adresi `KOC_PUBLIC_URL` olarak verin.
 
 ## Belgeler
 

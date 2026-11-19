@@ -209,7 +209,7 @@ def _form(istek: str, mod: str, hata: str = "", email: str = "", davet_gerekli: 
              if mod == "kayit" and davet_gerekli else "")
     sifre_ac = "new-password" if mod == "kayit" else "current-password"
     return (
-        f"<h1>TUS Koçu</h1><p class='muted'>Koçun notlarına erişmek için {'hesap aç' if mod == 'kayit' else 'giriş yap'}."
+        f"<h1>Çalışma Koçu</h1><p class='muted'>Koçun notlarına erişmek için {'hesap aç' if mod == 'kayit' else 'giriş yap'}."
         f" Bu bilgiler yalnız bu sunucuda tutulur.</p>"
         + (f"<p class='muted'>Bağlanmak isteyen: <b>{e(uygulama)}</b></p>" if uygulama else "")
         + f"{sekme}"
@@ -224,7 +224,7 @@ def _form(istek: str, mod: str, hata: str = "", email: str = "", davet_gerekli: 
     )
 
 
-CEREZ = "tus_koc_oturum"
+CEREZ = "calisma_kocu_oturum"
 CEREZ_SURESI = 90 * 24 * 3600
 MAKS_YUKLEME = 15 * 1024 * 1024
 
@@ -301,7 +301,7 @@ class HesapSayfalari:
             if self.saglayici.bekleyen(istek) is None:
                 return sayfa("Süre doldu", "<h1>Bağlantı isteği bulunamadı</h1><p class='muted'>Claude ya da ChatGPT"
                              " uygulamasına dönüp bağlayıcıyı yeniden bağlayın.</p>", 400)
-            return sayfa("TUS Koçu · Giriş", _form(istek, mod, davet_gerekli=self.davet_gerekli,
+            return sayfa("Çalışma Koçu · Giriş", _form(istek, mod, davet_gerekli=self.davet_gerekli,
                                                   uygulama=await self._uygulama(istek)))
         form = await request.form()
         istek, mod = str(form.get("istek", "")), str(form.get("mod", "giris"))
@@ -316,7 +316,7 @@ class HesapSayfalari:
         user_id, hata = self.kimlik_dogrula(mod, email, sifre, davet)
         if not user_id:
             self.sinir.hata(ip)
-            return sayfa("TUS Koçu · Giriş", _form(istek, mod, hata, email, self.davet_gerekli,
+            return sayfa("Çalışma Koçu · Giriş", _form(istek, mod, hata, email, self.davet_gerekli,
                                                   await self._uygulama(istek)), 400)
         try:
             hedef = self.saglayici.kodu_ver(istek, user_id)

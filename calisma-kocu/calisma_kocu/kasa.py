@@ -23,10 +23,10 @@ from typing import Any
 
 from mcp.server.mcpserver.exceptions import ToolError
 
-# Repo kökü: tus-koc/tus_koc/kasa.py -> ../../ ; Docker'da TUS_KOC_BEYIN_KAYNAK ile verilir.
-BEYIN_KAYNAK = Path(os.environ.get("TUS_KOC_BEYIN_KAYNAK") or Path(__file__).resolve().parents[2])
+# Repo kökü: calisma-kocu/calisma_kocu/kasa.py -> ../../ ; Docker'da KOC_BEYIN_KAYNAK ile verilir.
+BEYIN_KAYNAK = Path(os.environ.get("KOC_BEYIN_KAYNAK") or Path(__file__).resolve().parents[2])
 KOC_SKILL = Path(__file__).resolve().parent / "skill" / "SKILL.md"
-KOC_SKILL_HEDEF = ".agents/skills/tus-koc/SKILL.md"
+KOC_SKILL_HEDEF = ".agents/skills/calisma-kocu/SKILL.md"
 # Sunucuda yalnız Claude/Codex hook'ları ve çekirdek skill'ler gerekir; masaüstü başlatıcıları
 # ve diğer istemci adaptörleri kasaya (dolayısıyla iPad'e eşitlenen klasöre) konmaz.
 HARIC_BILESENLER = ("adapters", "launchers")
@@ -52,7 +52,7 @@ class Kasa:
         self.user_id = user_id
         self.vault = (vault_root / user_id).resolve()
         self.state = (state_root / user_id).resolve()
-        self.tmp = self.state / "tus-koc-tmp"
+        self.tmp = self.state / "calisma-kocu-tmp"
 
     # --- kurulum -------------------------------------------------------
     def kurulu_mu(self) -> bool:

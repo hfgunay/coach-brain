@@ -33,7 +33,7 @@ class Ayarlar:
 
     @property
     def db_path(self) -> Path:
-        return self.data_dir / "tus_koc.sqlite3"
+        return self.data_dir / "calisma_kocu.sqlite3"
 
     @property
     def vault_root(self) -> Path:
@@ -48,13 +48,13 @@ class Ayarlar:
     def ortamdan(cls) -> "Ayarlar":
         env = os.environ
         return cls(
-            public_url=env.get("TUS_KOC_PUBLIC_URL", cls.public_url).rstrip("/"),
-            data_dir=Path(env.get("TUS_KOC_DATA_DIR", "./data")),
-            host=env.get("TUS_KOC_HOST", cls.host),
-            port=int(env.get("PORT", env.get("TUS_KOC_PORT", cls.port))),
-            davet_kodlari=_list(env.get("TUS_KOC_DAVET_KODLARI")),
-            acik_kayit=env.get("TUS_KOC_ACIK_KAYIT", "").lower() in ("1", "true", "evet"),
-            izinli_hostlar=_list(env.get("TUS_KOC_IZINLI_HOSTLAR")),
-            **({"izinli_yonlendirmeler": _list(env["TUS_KOC_IZINLI_YONLENDIRMELER"])}
-               if env.get("TUS_KOC_IZINLI_YONLENDIRMELER") else {}),
+            public_url=env.get("KOC_PUBLIC_URL", cls.public_url).rstrip("/"),
+            data_dir=Path(env.get("KOC_DATA_DIR", "./data")),
+            host=env.get("KOC_HOST", cls.host),
+            port=int(env.get("PORT", env.get("KOC_PORT", cls.port))),
+            davet_kodlari=_list(env.get("KOC_DAVET_KODLARI")),
+            acik_kayit=env.get("KOC_ACIK_KAYIT", "").lower() in ("1", "true", "evet"),
+            izinli_hostlar=_list(env.get("KOC_IZINLI_HOSTLAR")),
+            **({"izinli_yonlendirmeler": _list(env["KOC_IZINLI_YONLENDIRMELER"])}
+               if env.get("KOC_IZINLI_YONLENDIRMELER") else {}),
         )

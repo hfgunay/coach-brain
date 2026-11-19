@@ -20,8 +20,8 @@ import uvicorn
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
-from tus_koc.config import Ayarlar
-from tus_koc.server import uygulama_kur
+from calisma_kocu.config import Ayarlar
+from calisma_kocu.server import uygulama_kur
 
 DAVET = "deneme-davet"
 CB = "http://localhost:9/cb"
@@ -72,7 +72,7 @@ def _baglan(base, email, sifre="cok-gizli-sifre", mod="kayit", davet=DAVET):
     login = urlparse(r.headers["location"])
     istek = parse_qs(login.query)["istek"][0]
     page = c.get(f"{login.path}?{login.query}")
-    assert page.status_code == 200 and "TUS Koçu" in page.text and "test (localhost)" in page.text
+    assert page.status_code == 200 and "Çalışma Koçu" in page.text and "test (localhost)" in page.text
     r = c.post("/hesap/giris", data={"istek": istek, "mod": mod, "email": email, "sifre": sifre, "davet": davet})
     assert r.status_code == 303, r.text
     q = parse_qs(urlparse(r.headers["location"]).query)
@@ -132,7 +132,7 @@ def test_uctan_uca_avenoxbeyin_kasasi(base):
     a_tok, a_refresh, a_client = _baglan(base, "ayse@ornek.com")
     out = asyncio.run(_araclar(base, a_tok, [
         ("kaldigim_yer", {}),
-        ("talimatlari_oku", {"hangisi": "tus-koc"}),
+        ("talimatlari_oku", {"hangisi": "calisma-kocu"}),
         ("not_olustur", {"kaynak": "notes/tus/farmakoloji/digoksin-hiperkalemi.md",
                          "metin": "# Digoksin ve hiperkalemi\n\nDigoksin toksisitesinde hiperkalemi olur; soruyu "
                                   "hipokalemi sanıp yanlış yaptım.\n",
@@ -148,12 +148,12 @@ def test_uctan_uca_avenoxbeyin_kasasi(base):
         ("not_oku", {"kaynak": "🔮 850-Companion/Threads.md"}),
         ("kasa_durumu", {}),
         ("eki_goster", {"yol": "../../oturum.key"}),
-        ("not_oku", {"kaynak": "../../../tus_koc.sqlite3"}),
+        ("not_oku", {"kaynak": "../../../calisma_kocu.sqlite3"}),
     ]))
     ilk = _ok(out["kaldigim_yer"][0])
     assert ilk["oturum"] and "Receipt session=" in ilk["baglam"] and "850-Companion/Core.md" in ilk["baglam"]
     assert "<kasa>" not in ilk["baglam"] or "/vaults/" not in ilk["baglam"]
-    assert "kasada_ara" in _ok(out["talimatlari_oku"][0])["tus-koc"]
+    assert "kasada_ara" in _ok(out["talimatlari_oku"][0])["calisma-kocu"]
     assert _ok(out["not_olustur"][0]).get("cikis_kodu") == 0
     assert _ok(out["gorev_olustur"][0])["due_at"] == "2026-01-02"
     bulunan = [r["source"] for r in _ok(out["kasada_ara"][0])["records"]]
@@ -193,7 +193,7 @@ def test_fotograf_yukleme_ve_gosterme(base):
     assert "Giriş yap" in c.get("/yukle").text
     assert c.post("/yukle", data={"islem": "giris", "email": "foto@ornek.com", "sifre": "yanlis-sifre"}).status_code == 400
     r = c.post("/yukle", data={"islem": "giris", "email": "foto@ornek.com", "sifre": "cok-gizli-sifre"})
-    assert r.status_code == 200 and "tus_koc_oturum" in r.headers.get("set-cookie", "")
+    assert r.status_code == 200 and "calisma_kocu_oturum" in r.headers.get("set-cookie", "")
     r = c.post("/yukle", data={"islem": "yukle"}, files={"dosya": ("soru.png", PNG, "image/png")})
     assert r.status_code == 200, r.text
     yol = re.findall(r"<code>([^<]+)</code>", r.text)[0]
@@ -232,4 +232,4 @@ def test_webdav_obsidian_esitleme(base):
     r = httpx.post(f"{base}/hesap/obsidian", data={"email": "baska@ornek.com", "sifre": "cok-gizli-sifre"})
     baska = ("baska@ornek.com", re.findall(r"<code>([^<]+)</code>", r.text)[2])
     assert httpx.get(f"{base}/dav/Konular/Tiroid.md", auth=baska).status_code == 404
-    assert httpx.get(f"{base}/dav/..%2F..%2Ftus_koc.sqlite3", auth=baska).status_code in (400, 403, 404)
+    assert httpx.get(f"{base}/dav/..%2F..%2Fcalisma_kocu.sqlite3", auth=baska).status_code in (400, 403, 404)

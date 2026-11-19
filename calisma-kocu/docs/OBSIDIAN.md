@@ -14,7 +14,7 @@ Sunucuda Obsidian çalışmaz, taşınmaz. Obsidian yalnız iPad'deki görüntü
 ## Kurulum (iPad ya da iPhone, bir kez)
 
 1. **Şifre al.** Safari'de `<sunucu adresi>/hesap/obsidian` sayfasını aç. Koç hesabının e-posta ve şifresini gir. Sayfa sana **Server Address**, **Username** ve tek seferlik bir **Password** gösterir. Bu ekranı açık tut ya da ekran görüntüsü al.
-2. App Store'dan **Obsidian**'ı kur, aç, **Create new vault** → ad: `TUS` → konum: **On my iPad** (iCloud değil).
+2. App Store'dan **Obsidian**'ı kur, aç, **Create new vault** → ad: `Çalışma` → konum: **On my iPad** (iCloud değil).
 3. Obsidian → **Settings** → **Community plugins** → **Turn on community plugins** → **Browse** → `Remotely Save` ara → **Install** → **Enable**.
 4. **Settings → Remotely Save**:
    - **Remote Service**: `Webdav`

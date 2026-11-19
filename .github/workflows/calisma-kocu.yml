@@ -1,11 +1,11 @@
-name: TUS Koçu sunucusu
+name: Çalışma Koçu sunucusu
 
 on:
   pull_request:
-    paths: ['tus-koc/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/tus-koc.yml']
+    paths: ['calisma-kocu/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/calisma-kocu.yml']
   push:
     branches: [main]
-    paths: ['tus-koc/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/tus-koc.yml']
+    paths: ['calisma-kocu/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/calisma-kocu.yml']
 
 jobs:
   test:
@@ -15,7 +15,7 @@ jobs:
         python: ['3.11', '3.12', '3.13']
     defaults:
       run:
-        working-directory: tus-koc
+        working-directory: calisma-kocu
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
