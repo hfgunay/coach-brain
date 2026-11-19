@@ -2,10 +2,10 @@ name: TUS Koçu sunucusu
 
 on:
   pull_request:
-    paths: ['tus-koc/**', '.github/workflows/tus-koc.yml']
+    paths: ['tus-koc/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/tus-koc.yml']
   push:
     branches: [main]
-    paths: ['tus-koc/**', '.github/workflows/tus-koc.yml']
+    paths: ['tus-koc/**', 'scripts/**', 'template/**', 'VERSION', '.github/workflows/tus-koc.yml']
 
 jobs:
   test:

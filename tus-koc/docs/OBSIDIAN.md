@@ -4,9 +4,9 @@ Koç çalışmak için Obsidian'a ihtiyaç duymaz. Bu adımlar, koçun yazdığ�
 
 ## Nasıl çalışıyor
 
-- Sunucuda her öğrencinin düz bir Markdown klasörü var. Koç notları buraya yazar.
+- Sunucuda her öğrencinin bir avenoxbeyin kasası var (düz Markdown klasörü). Koç notları buraya yazar.
 - Obsidian bu klasörün bir kopyasını iPad'de tutar. **Remotely Save** eklentisi iki kopyayı WebDAV üzerinden eşitler.
-- `[[Digoksin]]` gibi bağlantılar dosyanın içinde düz yazıdır. Obsidian bunları grafik olarak çizer, sunucu da aynı yazıyı okuyup koça "bu konu şunlarla ilişkili" bilgisini verir (`konu_iliskileri` aracı).
+- `[[Digoksin]]` gibi bağlantılar dosyanın içinde düz yazıdır. Obsidian bunları grafik olarak çizer; avenoxbeyin de aynı bağlantıları okur.
 - Obsidian'da yazdığın not, eşitlemeden sonra koçun aramasında da çıkar.
 
 Sunucuda Obsidian çalışmaz, taşınmaz. Obsidian yalnız iPad'deki görüntüleyici ve editördür.
@@ -23,11 +23,11 @@ Sunucuda Obsidian çalışmaz, taşınmaz. Obsidian yalnız iPad'deki görüntü
    - **Depth Header Sent To Servers**: `auto detect`
    - **Check Connectivity** → "connected" görmelisin.
    - **Schedule For Auto Run**: `every 5 minutes`, **Run Once On Start Up Automatically**: açık.
-5. Sol kenardaki eşitleme simgesine bas. `Koç/`, `Konular/`, `Oturumlar/` klasörleri ve `Başla.md` gelir.
+5. Sol kenardaki eşitleme simgesine bas. `🔮 850-Companion/` (profil, kurallar, kaldığın yer), `notes/`, `tasks/` ve `Ekler/` (yüklediğin soru fotoğrafları) gelir. Motorun çalışma dosyaları (`beyin.py`, gizli klasörler) bilerek gelmez.
 
 ## Bilmen gerekenler
 
 - Şifreyi kaybedersen 1. adımı tekrarla; yeni şifre üretilir, eskisi çalışmaz.
 - Aynı notu aynı dakikada hem koça hem Obsidian'a düzenletirsen son kaydedilen kazanır. Koç oturumu bittikten sonra eşitle.
-- `Koç/Performans.md` her soru kaydında sunucu tarafından yeniden yazılır; elle düzenlemeler kaybolur.
+- `Ekler/` altındaki fotoğraflar notlarda `![[Ekler/...]]` ile görünür.
 - Büyük PDF ve görselleri kasaya koyma; sunucuda kullanıcı başına disk sınırı yok ve eşitleme yavaşlar.

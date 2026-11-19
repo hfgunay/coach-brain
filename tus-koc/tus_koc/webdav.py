@@ -10,17 +10,31 @@ import os
 from pathlib import Path
 
 from a2wsgi import WSGIMiddleware
-from wsgidav.dav_error import HTTP_FORBIDDEN, DAVError
+from wsgidav.dav_error import HTTP_FORBIDDEN, HTTP_NOT_FOUND, DAVError
 from wsgidav.dc.base_dc import BaseDomainController
 from wsgidav.error_printer import ErrorPrinter
 from wsgidav.http_authenticator import HTTPAuthenticator
 from wsgidav.request_resolver import RequestResolver
-from wsgidav.fs_dav_provider import FilesystemProvider
+from wsgidav.fs_dav_provider import FileResource, FilesystemProvider, FolderResource
 from wsgidav.wsgidav_app import WsgiDAVApp
 
 from .db import DB
 
 _ANAHTAR = "tus_koc.user_id"
+# Kasanın yönetilen çalışma dosyaları iPad'e eşitlenmez ve oradan değiştirilemez; aksi halde
+# avenoxbeyin güncellemesi "managed file changed" çakışmasıyla durur. Notlar, Companion,
+# görevler ve Ekler eşitlenir.
+GIZLI_KOK = {"beyin.py", "AGENTS.md", "CLAUDE.md"}
+
+
+def _gizli(parts: list[str]) -> bool:
+    return any(p.startswith(".") for p in parts) or (len(parts) == 1 and parts[0] in GIZLI_KOK)
+
+
+class _Klasor(FolderResource):
+    def get_member_names(self):
+        kok = self.path.strip("/") == ""
+        return [n for n in super().get_member_names() if not n.startswith(".") and not (kok and n in GIZLI_KOK)]
 
 
 class KullaniciKlasoru(FilesystemProvider):
@@ -32,11 +46,20 @@ class KullaniciKlasoru(FilesystemProvider):
         root.mkdir(parents=True, exist_ok=True)
         root_real = os.path.realpath(root)
         parts = [p for p in path.strip("/").split("/") if p]
+        if _gizli(parts):
+            raise DAVError(HTTP_NOT_FOUND)
         file_path = os.path.abspath(os.path.join(root, *parts))
         real = os.path.realpath(file_path)
         if real != root_real and not real.startswith(root_real + os.sep):
             raise DAVError(HTTP_FORBIDDEN)
         return file_path
+
+
+    def get_resource_inst(self, path: str, environ: dict):
+        fp = self._loc_to_file_path(path, environ)
+        if not os.path.exists(fp) or os.path.islink(fp):
+            return None
+        return _Klasor(path, environ, fp) if os.path.isdir(fp) else FileResource(path, environ, fp)
 
 
 class HesapDogrulayici(BaseDomainController):

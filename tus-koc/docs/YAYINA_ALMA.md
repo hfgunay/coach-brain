@@ -13,8 +13,8 @@ Railway GitHub reposundan otomatik derler, disk (volume) ve HTTPS adresi verir. 
 
 1. [railway.com](https://railway.com) → GitHub ile giriş → **New Project** → **Deploy from GitHub repo** → `hfgunay/coach-brain`.
 2. Servisin **Settings** sekmesi:
-   - **Root Directory**: `tus-koc`
-   - **Config file**: `tus-koc/railway.json` (Railway kendisi bulamazsa)
+   - **Root Directory**: boş bırakın (repo kökü). İmaj avenoxbeyin motorunu (`scripts/`, `template/`) da içerir.
+   - **Config file**: `tus-koc/railway.json` (Dockerfile yolu `tus-koc/Dockerfile` orada yazılı)
 3. Servise sağ tıklayın (telefonda uzun basın) → **Attach Volume** → mount path `/data`.
 4. **Settings → Networking → Generate Domain**. Çıkan adresi kopyalayın, örn. `https://tus-koc-production.up.railway.app`.
 5. **Variables** sekmesine ekleyin:
@@ -38,8 +38,8 @@ Railway GitHub reposundan otomatik derler, disk (volume) ve HTTPS adresi verir. 
 ## Seçenek B: Kendi sunucunuz (VPS) ve Docker
 
 ```bash
-git clone https://github.com/hfgunay/coach-brain && cd coach-brain/tus-koc
-docker build -t tus-koc .
+git clone https://github.com/hfgunay/coach-brain && cd coach-brain
+docker build -f tus-koc/Dockerfile -t tus-koc .   # repo kökünden: motor da imaja girer
 docker run -d --name tus-koc --restart unless-stopped \
   -p 127.0.0.1:8000:8000 -v tus-koc-data:/data \
   -e TUS_KOC_PUBLIC_URL=https://koc.ornek.com \
@@ -57,7 +57,7 @@ koc.ornek.com {
 
 ## Yedekleme
 
-Her şey `/data` altında: `tus_koc.sqlite3` (hesaplar, belirteçler, soru sonuçları) ve `vaults/` (notlar). Haftada bir yedek alın:
+Her şey `/data` altında: `tus_koc.sqlite3` (hesaplar, belirteçler), `vaults/` (kullanıcıların avenoxbeyin kasaları) ve `state/` (motorun yeniden kurulabilir indeksi). Asıl değerli olan `vaults/`. Haftada bir yedek alın:
 
 ```bash
 sqlite3 /data/tus_koc.sqlite3 ".backup /data/yedek.sqlite3"
@@ -68,7 +68,7 @@ Railway'de volume'un **Backups** sekmesinden otomatik yedek de açılabilir. Ö�
 
 ## Yönetici işleri
 
-Şifre sıfırlama (e-posta akışı yok, v0.1):
+Şifre sıfırlama (e-posta akışı yok):
 
 ```bash
 python -c "
@@ -78,3 +78,7 @@ db.x('UPDATE users SET pw_hash=? WHERE email=?', (sifre_hashle('yeni-gecici-sifr
 ```
 
 Bir kullanıcının tüm bağlantılarını kapatmak: `DELETE FROM oauth_tokens WHERE user_id = '<id>'`.
+
+## avenoxbeyin güncellemesi
+
+Kasalar ilk kullanımda imajdaki motorla kurulur. Yeniden dağıtımdan sonra yeni kullanıcılar yeni sürümü alır; mevcut kasaları yükseltmek için motorun kendi yolu kullanılır: kasa içinde `python3 beyin.py update` (bkz. kökteki SETUP-V3.md). Koç skill'i her istekte kontrol edilir, değiştiyse kasaya yeniden yazılır.

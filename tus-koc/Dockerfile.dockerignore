@@ -1,0 +1,8 @@
+**/.git
+**/__pycache__
+**/*.egg-info
+**/.pytest_cache
+tus-koc/data
+tus-koc/tests
+tests
+docs

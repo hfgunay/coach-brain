@@ -26,10 +26,18 @@ En kolayı iPhone ya da iPad'de **Safari**'den yapmak. Eklediğin bağlayıcı C
 ### 2. Koç projesini kur (bir kez)
 
 1. Claude'da **Projects** → **New project** → ad: `TUS Koçu`.
-2. Projenin **Instructions** (talimatlar) alanına [koç talimatlarının](../tus_koc/talimatlar.md) tamamını yapıştır.
+2. Projenin **Instructions** (talimatlar) alanına şunu yaz: `Her sohbette önce TUS Koçu bağlayıcısından kaldigim_yer'i, sonra talimatlari_oku'yu çalıştır.` Koçluk talimatlarının tamamı sunucuda, kasanın içinde durur.
 3. Proje özelliği planında yoksa sorun değil: sunucu kısa talimatı zaten veriyor. Her yeni sohbete "TUS koçum olarak başla" yazman yeterli.
 
-### 3. Her gün
+### 3. Fotoğraf yükleme sayfası (bir kez)
+
+Claude, sohbete attığın fotoğrafı bağlayıcıya aktaramaz. Saklanacak soru fotoğrafları için:
+
+1. Safari'de `<sunucu adresi>/yukle` aç, koç hesabınla giriş yap (90 gün hatırlar).
+2. Paylaş → **Ana Ekrana Ekle**. Artık telefonda "Soru yükle" simgesi var.
+3. Yapamadığın sorunun fotoğrafını oradan yükle, sonra koça "az önce yüklediğim soruya bakalım" yaz. Koç `eki_goster` ile görür.
+
+### 4. Her gün
 
 1. Claude uygulamasında **TUS Koçu** projesinde yeni sohbet aç.
 2. Mesaj kutusundaki **+** → **Connectors** → **TUS Koçu** açık olsun.
@@ -40,7 +48,9 @@ Koça doğrudan şunları söyleyebilirsin:
 
 - "Sınavım 2027-03-21, günde 6 saat çalışabiliyorum."
 - "Farmakoloji otonom çalıştım, 20 soruda 13 doğru."
-- "Bu haftanın planını çıkar, pazar nöbetim var."
+- "Bu haftanın planını çıkar, pazar nöbetim var." (önce taslak gösterir, onaylarsan görevlere döker)
+- "Yüklediğim soruyu birlikte çözelim, sonra not al."
+- "Yapamadığım sorulardan bana soru hazırla."
 - "Kalp yetmezliğini anlat, sonra 5 soru sor. Önemli yerleri not al."
 - "Bana bu kadar uzun yazma." (kalıcı kural olarak kaydeder)
 - "Bugünlük bu kadar." (oturumu kaydeder, yarın oradan devam eder)

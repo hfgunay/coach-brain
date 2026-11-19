@@ -10,6 +10,8 @@ Belirteçler veritabanında yalnız SHA-256 özetiyle tutulur.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import html
 import json
 import secrets
@@ -222,10 +224,38 @@ def _form(istek: str, mod: str, hata: str = "", email: str = "", davet_gerekli: 
     )
 
 
+CEREZ = "tus_koc_oturum"
+CEREZ_SURESI = 90 * 24 * 3600
+MAKS_YUKLEME = 15 * 1024 * 1024
+
+
 class HesapSayfalari:
     def __init__(self, db: DB, saglayici: Saglayici, ayarlar: Ayarlar):
         self.db, self.saglayici, self.ayarlar = db, saglayici, ayarlar
         self.sinir = Sinirlayici()
+        anahtar = ayarlar.data_dir / "oturum.key"
+        if not anahtar.exists():
+            anahtar.parent.mkdir(parents=True, exist_ok=True)
+            anahtar.write_bytes(secrets.token_bytes(32))
+            anahtar.chmod(0o600)
+        self._anahtar = anahtar.read_bytes()
+
+    # --- yükleme sayfası için kalıcı çerez ---------------------------------
+    def _imza(self, govde: str) -> str:
+        return hmac.new(self._anahtar, govde.encode(), hashlib.sha256).hexdigest()
+
+    def cerez_uret(self, user_id: str) -> str:
+        govde = f"{user_id}.{int(time.time()) + CEREZ_SURESI}"
+        return f"{govde}.{self._imza(govde)}"
+
+    def cerez_coz(self, deger: str | None) -> str | None:
+        try:
+            user_id, bitis, imza = (deger or "").split(".")
+        except ValueError:
+            return None
+        if not hmac.compare_digest(imza, self._imza(f"{user_id}.{bitis}")) or int(bitis) < time.time():
+            return None
+        return user_id if self.db.kullanici(user_id) else None
 
     @property
     def davet_gerekli(self) -> bool:
@@ -324,3 +354,53 @@ class HesapSayfalari:
             f"<label>Password</label><code>{e(dav_sifre)}</code>"
             "<label>Auth Type</label><code>basic</code>"
             "<label>Depth Header Sent To Servers</label><code>auto detect</code>"))
+
+
+    async def yukle(self, request: Request, kaydet) -> Response:
+        """Soru fotoğraflarını kasaya yükler. İlk girişten sonra 90 gün çerezle hatırlar;
+        iPhone'da "Ana Ekrana Ekle" ile tek dokunuşluk yükleme düğmesi olur."""
+        user_id = self.cerez_coz(request.cookies.get(CEREZ))
+        giris_formu = (
+            "<h1>Fotoğraf yükle</h1><p class='muted'>Koç hesabınla bir kez giriş yap; bu telefon hatırlanır.</p>"
+            "<form method='post'><input type='hidden' name='islem' value='giris'>"
+            "<label for='email'>E-posta</label><input id='email' name='email' type='email' autocomplete='username' required>"
+            "<label for='sifre'>Şifre</label><input id='sifre' name='sifre' type='password' autocomplete='current-password' required>"
+            "<button type='submit'>Giriş yap</button>")
+        yukleme_formu = (
+            "<h1>Fotoğraf yükle</h1><p class='muted'>Çözemediğin sorunun fotoğrafını seç. Sonra koça "
+            "\"yüklediğim soruya bakalım\" yaz.</p>"
+            "<form method='post' enctype='multipart/form-data'><input type='hidden' name='islem' value='yukle'>"
+            "<input type='file' name='dosya' accept='image/*,application/pdf' multiple required>"
+            "<button type='submit'>Yükle</button></form>")
+        if request.method == "GET":
+            return sayfa("Fotoğraf yükle", yukleme_formu if user_id else giris_formu + "</form>")
+        form = await request.form()
+        if form.get("islem") == "giris":
+            ip = self._ip(request)
+            if self.sinir.engelli(ip):
+                return sayfa("Bekleyin", giris_formu + "<div class='err'>Çok fazla deneme, 15 dakika bekleyin.</div></form>", 429)
+            uid = self.db.giris(str(form.get("email", "")), str(form.get("sifre", "")))
+            if not uid:
+                self.sinir.hata(ip)
+                return sayfa("Fotoğraf yükle", giris_formu + "<div class='err'>E-posta ya da şifre hatalı.</div></form>", 400)
+            yanit = sayfa("Fotoğraf yükle", yukleme_formu)
+            yanit.set_cookie(CEREZ, self.cerez_uret(uid), max_age=CEREZ_SURESI, httponly=True, samesite="strict",
+                             secure=self.ayarlar.public_url.startswith("https://"), path="/yukle")
+            return yanit
+        if not user_id:
+            return sayfa("Fotoğraf yükle", giris_formu + "</form>", 401)
+        dosyalar = []
+        for item in form.getlist("dosya"):
+            if not hasattr(item, "read"):
+                continue
+            veri = await item.read()
+            if len(veri) > MAKS_YUKLEME:
+                return sayfa("Fotoğraf yükle", yukleme_formu + "<div class='err'>Dosya 15 MB'tan büyük.</div>", 413)
+            if veri:
+                dosyalar.append((item.filename or "foto.jpg", veri))
+        if not dosyalar:
+            return sayfa("Fotoğraf yükle", yukleme_formu + "<div class='err'>Dosya seçilmedi.</div>", 400)
+        yollar = kaydet(user_id, dosyalar[:10])
+        liste = "".join(f"<li><code>{html.escape(y)}</code></li>" for y in yollar)
+        return sayfa("Yüklendi", f"<h1>Yüklendi</h1><p class='muted'>Koça \"yüklediğim soruya bakalım\" yaz.</p>"
+                                 f"<ul>{liste}</ul><p><a href='/yukle'>Bir tane daha yükle</a></p>")

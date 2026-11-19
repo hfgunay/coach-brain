@@ -39,6 +39,11 @@ class Ayarlar:
     def vault_root(self) -> Path:
         return self.data_dir / "vaults"
 
+    @property
+    def state_root(self) -> Path:
+        """avenoxbeyin runtime state'i (indeks, kilitler); kasanın ve WebDAV'ın dışında."""
+        return self.data_dir / "state"
+
     @classmethod
     def ortamdan(cls) -> "Ayarlar":
         env = os.environ

@@ -1,8 +1,7 @@
-"""SQLite katmanı: kullanıcılar, OAuth kayıtları ve soru sonuçları.
+"""SQLite katmanı: yalnız kullanıcılar ve OAuth kayıtları.
 
-Notların kendisi burada değil, kullanıcı başına Markdown klasöründe durur (vault.py).
-Burada yalnız yapılandırılmış veri tutulur: kimlik, oturum belirteçleri ve
-istatistik için gereken soru sonuçları.
+Öğrencinin hafızası (notlar, görevler, oturum sonuçları) burada değil, kullanıcı başına
+kurulan avenoxbeyin kasasında durur (kasa.py).
 """
 from __future__ import annotations
 
@@ -51,21 +50,6 @@ CREATE TABLE IF NOT EXISTS oauth_tokens (
     created REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS oauth_tokens_user ON oauth_tokens(user_id, client_id);
-CREATE TABLE IF NOT EXISTS results (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id TEXT NOT NULL,
-    tarih TEXT NOT NULL,
-    ders TEXT NOT NULL,
-    konu TEXT NOT NULL,
-    konu_key TEXT NOT NULL,
-    dogru INTEGER NOT NULL,
-    yanlis INTEGER NOT NULL,
-    bos INTEGER NOT NULL,
-    kaynak TEXT,
-    aciklama TEXT,
-    created REAL NOT NULL
-);
-CREATE INDEX IF NOT EXISTS results_user ON results(user_id, konu_key);
 """
 
 
@@ -145,16 +129,3 @@ class DB:
         self.x("DELETE FROM oauth_pending WHERE expires < ?", (now,))
         self.x("DELETE FROM oauth_codes WHERE expires < ?", (now,))
         self.x("DELETE FROM oauth_tokens WHERE expires IS NOT NULL AND expires < ?", (now,))
-
-    # --- soru sonuçları ------------------------------------------------
-    def sonuc_ekle(self, user_id: str, **alanlar: Any) -> None:
-        self.x(
-            "INSERT INTO results (user_id, tarih, ders, konu, konu_key, dogru, yanlis, bos, kaynak, aciklama, created)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (user_id, alanlar["tarih"], alanlar["ders"], alanlar["konu"], alanlar["konu_key"],
-             alanlar["dogru"], alanlar["yanlis"], alanlar["bos"], alanlar.get("kaynak"),
-             alanlar.get("aciklama"), time.time()),
-        )
-
-    def sonuclar(self, user_id: str) -> list[sqlite3.Row]:
-        return self.q("SELECT * FROM results WHERE user_id = ? ORDER BY tarih, id", (user_id,))

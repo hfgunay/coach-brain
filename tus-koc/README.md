@@ -1,49 +1,58 @@
-# TUS Koçu · uzak MCP hafıza sunucusu
+# TUS Koçu · avenoxbeyin'i telefondan kullanılır kılan uzak MCP sunucusu
 
-TUS'a hazırlanan öğrenci için yapay zeka çalışma koçu. Öğrenci kendi Claude (ya da ChatGPT) aboneliğini kullanır, bu sunucuyu **özel bağlayıcı** olarak ekler. Koç notları, oturumları, zayıf konuları ve çalışma planını burada hatırlar. Sunucu hiçbir dil modeli API'si çağırmaz; maliyeti barındırmadan ibarettir.
+Sınava çalışan öğrenci için ikinci beyin. Öğrenci kendi Claude aboneliğini kullanır, bu sunucuyu **özel bağlayıcı** olarak ekler. Sunucu hiçbir dil modeli API'si çağırmaz; maliyeti barındırmadan ibarettir.
 
-Bu klasör [avenoxai/avenoxbeyin](https://github.com/avenoxai/avenoxbeyin) projesinin fikirlerini (Companion hafıza dosyaları, Türkçe kök bulucu, BM25 pasaj araması) telefondan kullanılabilen, çok kullanıcılı bir sunucuya taşır. Repo kökündeki masaüstü kurulumundan bağımsızdır.
+**Hafıza motoru bu klasörde değil, repo kökündeki avenoxbeyin'dir.** Sunucu her kullanıcı için resmi `scripts/install_v3.py` ile gerçek bir avenoxbeyin V3 kasası kurar ve MCP araçlarını o kasanın kendi `beyin.py` komutlarına bağlar. Arama, not ve görev yazımı, revision ve sha çakışma kontrolü, tekrar tarihleri (`review_at`), görev bitiş tarihleri (`due_at`), Companion dosyaları, oturum sonuçları (receipt) ve öğrenim adayları motordan gelir. Burada ayrı bir hafıza, plan ya da hata defteri mantığı yoktur.
 
 ```
 iPhone / iPad                         Sunucu (tek konteyner)
-┌──────────────┐  MCP + OAuth   ┌──────────────────────────────────┐
-│ Claude uyg.  │ ─────────────► │ /mcp       14 koç aracı          │
-└──────────────┘                │ /authorize, /token, /register    │
-┌──────────────┐  WebDAV        │ /hesap/... giriş, Obsidian şifre │
-│ Obsidian +   │ ◄────────────► │ /dav/      kullanıcının klasörü  │
-│ Remotely Save│                │                                  │
-└──────────────┘                │ /data/vaults/<kullanıcı>/*.md    │
-                                │ /data/tus_koc.sqlite3            │
-                                └──────────────────────────────────┘
+┌──────────────┐  MCP + OAuth   ┌───────────────────────────────────────────┐
+│ Claude uyg.  │ ─────────────► │ /mcp     araçlar ──► beyin.py --json <komut> │
+└──────────────┘                │ /authorize, /token, /register (OAuth 2.1)  │
+┌──────────────┐  HTTPS form    │ /yukle   soru fotoğrafı ──► kasa/Ekler/    │
+│ Safari       │ ─────────────► │ /hesap/  giriş, Obsidian şifresi           │
+└──────────────┘                │                                           │
+┌──────────────┐  WebDAV        │ /dav/    kullanıcının kendi kasası         │
+│ Obsidian +   │ ◄────────────► │                                           │
+│ Remotely Save│                │ /data/vaults/<id>/  avenoxbeyin kasası     │
+└──────────────┘                │ /data/state/<id>/   motorun indeks/kilit   │
+                                │ /data/tus_koc.sqlite3  hesaplar + OAuth    │
+                                └───────────────────────────────────────────┘
 ```
 
-## Kasa düzeni (Obsidian'da böyle görünür)
+## Neyin nereden geldiği
 
-| Dosya | Görevi | avenoxbeyin karşılığı |
-| --- | --- | --- |
-| `Koç/Profil.md` | Ad, sınav tarihi, günlük saat, güçlü/zayıf dersler | Core |
-| `Koç/Son Oturum.md` | Son 8 oturum kartı, en yeni üstte | Last-Session |
-| `Koç/Açık Konular.md` | Yarım kalan konular, `- [ ]` listesi | Threads |
-| `Koç/Kurallar.md` | Öğrencinin koça kalıcı talimatları | Kurallar |
-| `Koç/Performans.md` | Konu bazlı başarı tablosu (sunucu üretir) | yok |
-| `Plan/Çalışma Planı.md` | Günlük bloklu plan | yok |
-| `Oturumlar/YYYY-AA-GG.md` | Günün tüm oturum kayıtları | daily log |
-| `Konular/<Ders>/<Konu>.md` | Ders notları, `[[bağlantı]]` ve `#etiket` ile | Knowledge |
+| İhtiyaç | Kaynak |
+| --- | --- |
+| Profil, kurallar, kaldığı yer, açık konular | Kasadaki `🔮 850-Companion/` (Core, Kurallar, Last-Session, Threads) |
+| Sohbet başı bağlam, tarihi gelen tekrar ve görevler | Kasanın SessionStart hook'u (`.claude/scripts/beyin_v3_hook.py`) |
+| Yapamadığı soru, konu notu | `note-create`; yeni notlar repo kuralı gereği `notes/` ya da `knowledge/` altında, klasörü koç seçer |
+| Tekrar zamanı | Notun `review_at` alanı; motor "Due reviews" olarak getirir |
+| Çalışma planı | `task-create` ile görevler, `project: tus`, `due_at` |
+| TUS'a özgü davranış | Yalnız koç skill'i: [tus_koc/skill/SKILL.md](tus_koc/skill/SKILL.md) (kasaya `.agents/skills/tus-koc/` olarak konur) |
 
 ## Araçlar
 
-| Araç | Ne yapar |
+| Araç | beyin karşılığı |
 | --- | --- |
-| `kaldigim_yer` | Konuşma başında profil, son oturum, açık konular, kurallar, bugünün planı, zayıf ve tekrarı gelen konular |
-| `notlarda_ara` | Türkçe ekleri tanıyan BM25 pasaj araması ("yetmezliğinde" ↔ "yetmezlik") |
-| `not_oku`, `not_yaz`, `notlari_listele` | Obsidian uyumlu not okuma/yazma (olustur, sona_ekle, uzerine_yaz) |
-| `konu_iliskileri` | `[[bağlantı]]` grafiğinden ilişkili konular, geri bağlantılar, notu olmayan bağlantılar |
-| `soru_sonucu_kaydet`, `zayif_konular` | Konu başarısı, aralıklı tekrar zamanı, zayıflık sıralaması |
-| `calisma_plani_olustur` | Sınava kalan süreye, ders ağırlığına ve zayıf konulara göre plan |
-| `oturumu_kaydet`, `acik_konu_guncelle`, `kural_ekle`, `profili_guncelle` | Hafıza dosyalarını günceller |
-| `tus_mufredati` | Ders ve konu adları (istatistik dağılmasın diye) |
+| `kaldigim_yer` | SessionStart hook bağlamı + oturum kimliği |
+| `talimatlari_oku` | Kasadaki AGENTS.md, beyin skill'i ve TUS koç skill'i |
+| `kasada_ara` | `context` |
+| `not_oku`, `not_olustur`, `not_duzenle` | `note-read`, `note-create`, `note-edit` |
+| `gorev_olustur`, `gorev_guncelle` | `task-create`, `task-update` |
+| `sonuc_kaydet` | `receipt` |
+| `ogrenim_adayi` | `learn` |
+| `kasa_durumu`, `son_sonuclar` | `triage`, `recap` |
+| `ekleri_listele`, `eki_goster` | Sunucuya ait: `/yukle` sayfasından gelen fotoğrafları gösterir (Claude araç argümanıyla görsel gönderemediği için) |
 
-Ayrıca `tus_kocu` adlı bir MCP istemi tam koç talimatlarını verir ([tus_koc/talimatlar.md](tus_koc/talimatlar.md)).
+`tus_kocu` MCP istemi koç skill'inin metnini verir.
+
+## Sunucuya ait olanlar
+
+- OAuth 2.1 (DCR + PKCE), e-posta ve şifre ile hesap, davet kodu, giriş denemesi sınırı
+- Kullanıcı başına kasa kurulumu ve kasaya kilitleme (yol hilesi korumalı)
+- WebDAV (`/dav`): Obsidian eşitlemesi. Motorun yönettiği dosyalar (`beyin.py`, `AGENTS.md`, `CLAUDE.md`, nokta ile başlayan klasörler) gösterilmez ve yazılamaz.
+- `/yukle`: telefondan soru fotoğrafı yükleme sayfası (çerezle oturum, 2000 px JPEG'e küçültme)
 
 ## Yerelde çalıştırma
 
@@ -51,23 +60,22 @@ Ayrıca `tus_kocu` adlı bir MCP istemi tam koç talimatlarını verir ([tus_koc
 cd tus-koc
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[test]"
-python -m pytest -q                      # 22 test: OAuth, MCP, kullanıcı ayrımı, WebDAV
+python -m pytest -q                      # gerçek kasa kurulumu, OAuth, MCP, ayrım, WebDAV, fotoğraf
 TUS_KOC_DAVET_KODLARI=deneme tus-koc     # http://localhost:8000
 ```
 
-Yerelde Claude'a bağlamak için sunucunun internetten erişilebilir HTTPS adresi gerekir (örn. `cloudflared tunnel --url http://localhost:8000`), adresi `TUS_KOC_PUBLIC_URL` olarak verin.
+Sunucu motoru repo kökünden bulur (`tus-koc/..`). Başka bir yerdeyse `TUS_KOC_BEYIN_KAYNAK` ile avenoxbeyin kopyasını gösterin. Claude'a bağlamak için internetten erişilen bir HTTPS adresi gerekir (örn. `cloudflared tunnel --url http://localhost:8000`), adresi `TUS_KOC_PUBLIC_URL` olarak verin.
 
 ## Belgeler
 
-- [Yayına alma](docs/YAYINA_ALMA.md): Railway (önerilen) ya da herhangi bir Docker sunucusu
+- [Yayına alma](docs/YAYINA_ALMA.md): Railway (önerilen) ya da Docker
 - [Telefondan bağlama](docs/TELEFONDAN_BAGLAMA.md): öğrencinin adım adım yapacakları
-- [Obsidian eşitleme](docs/OBSIDIAN.md): iPad'de notları görmek (isteğe bağlı)
-- [Koç talimatları](docs/KOC_TALIMATLARI.md): Claude Projesine yapıştırılacak metin
+- [Obsidian eşitleme](docs/OBSIDIAN.md): iPad'de kasayı görmek (isteğe bağlı)
+- [Koç talimatları](docs/KOC_TALIMATLARI.md): koç skill'inin nerede durduğu ve nasıl güncellendiği
 
-## Bilinen sınırlar (v0.1)
+## Bilinen sınırlar (v0.2)
 
-- Tek konteyner, tek kopya çalışmalı: SQLite, giriş deneme sınırı ve MCP oturumları bellekte/yerel diskte.
-- Şifre sıfırlama yok (e-posta gönderimi yok). Şimdilik yönetici veritabanından sıfırlar.
-- Ödeme ve abonelik yok; kayıt davet koduyla kapalı.
-- Kullanıcı başına disk kotası yok; WebDAV'dan büyük PDF/görsel yüklenirse disk dolabilir.
-- WebDAV ile aynı anda hem Obsidian hem koç aynı dosyayı yazarsa son yazan kazanır.
+- Tek konteyner, tek kopya: SQLite, giriş sınırı ve MCP oturumları yerel.
+- Bildirim yok: MCP sohbeti sunucu başlatamaz. Hatırlatma ve fotoğraf için Telegram botu planlanıyor.
+- Şifre sıfırlama, ödeme ve kullanıcı başına disk kotası yok.
+- Aynı notu aynı anda hem Obsidian hem koç yazarsa: koçun yazması motorun sha kontrolüyle korunur, Obsidian tarafında son eşitleyen kazanır.

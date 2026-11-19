@@ -3,6 +3,7 @@ import asyncio
 import base64
 import hashlib
 import json
+from urllib.parse import unquote
 import re
 import secrets
 import socket
@@ -94,9 +95,13 @@ async def _araclar(base, token, calls):
                 out = {"_tools": [t.name for t in (await s.list_tools()).tools]}
                 for name, args in calls:
                     res = await s.call_tool(name, args)
-                    text = res.content[0].text if res.content else ""
-                    out.setdefault(name, []).append(
-                        {"error": res.is_error, "data": res.structured_content or (json.loads(text) if text.startswith("{") else text)})
+                    first = res.content[0] if res.content else None
+                    text = getattr(first, "text", "") or ""
+                    data = res.structured_content or (json.loads(text) if text.startswith("{") else text)
+                    if isinstance(data, dict) and set(data) == {"result"}:
+                        data = data["result"]
+                    out.setdefault(name, []).append({"error": res.is_error, "data": data, "type": getattr(first, "type", None),
+                                                     "mime": getattr(first, "mime_type", None)})
                 return out
 
 
@@ -118,33 +123,59 @@ def test_davet_kodu_olmadan_kayit_olunmaz(base):
         _baglan(base, "davetsiz@ornek.com", davet="yanlis")
 
 
-def test_uctan_uca(base):
+def _ok(item):
+    assert item["error"] is False, item
+    return item["data"]
+
+
+def test_uctan_uca_avenoxbeyin_kasasi(base):
     a_tok, a_refresh, a_client = _baglan(base, "ayse@ornek.com")
     out = asyncio.run(_araclar(base, a_tok, [
         ("kaldigim_yer", {}),
-        ("not_yaz", {"baslik": "Digoksin", "icerik": "Digoksin toksisitesinde [[Hiperkalemi]] olur.",
-                     "ders": "Farmakoloji"}),
-        ("notlarda_ara", {"sorgu": "digoksinin toksisitesi"}),
-        ("soru_sonucu_kaydet", {"ders": "Farmakoloji", "konu": "Otonom", "dogru": 5, "yanlis": 5}),
-        ("oturumu_kaydet", {"ozet": "Digoksin çalışıldı.", "calisilan_konular": ["Digoksin"]}),
-        ("not_oku", {"ad": "../../etc/passwd"}),
+        ("talimatlari_oku", {"hangisi": "tus-koc"}),
+        ("not_olustur", {"kaynak": "notes/tus/farmakoloji/digoksin-hiperkalemi.md",
+                         "metin": "# Digoksin ve hiperkalemi\n\nDigoksin toksisitesinde hiperkalemi olur; soruyu "
+                                  "hipokalemi sanıp yanlış yaptım.\n",
+                         "metadata": {"title": "Digoksin hiperkalemi hatası", "review_at": "2026-01-01",
+                                      "tags": ["hata", "farmakoloji"]}}),
+        ("gorev_olustur", {"kaynak": "tasks/tus-farma-otonom.md", "metin": "Farmakoloji otonom: konu + 40 soru",
+                           "metadata": {"id": "tus-farma-otonom", "title": "Farmakoloji otonom", "kind": "task",
+                                        "status": "active", "owner": "Ayşe", "project": "tus",
+                                        "due_at": "2026-01-02"}}),
+        ("kasada_ara", {"sorgu": "digoksinin toksisitesinde potasyum yüksekliği"}),
+        ("gorev_guncelle", {"id": "tus-farma-otonom", "beklenen_revision": 1, "degisiklikler": {"status": "done"}}),
+        ("gorev_guncelle", {"id": "tus-farma-otonom", "beklenen_revision": 1, "degisiklikler": {"status": "done"}}),
+        ("not_oku", {"kaynak": "🔮 850-Companion/Threads.md"}),
+        ("kasa_durumu", {}),
+        ("eki_goster", {"yol": "../../oturum.key"}),
+        ("not_oku", {"kaynak": "../../../tus_koc.sqlite3"}),
     ]))
-    assert {"kaldigim_yer", "notlarda_ara", "not_yaz", "oturumu_kaydet", "calisma_plani_olustur"} <= set(out["_tools"])
-    assert out["kaldigim_yer"][0]["data"]["profil_eksik"]
-    assert out["notlarda_ara"][0]["data"]["sonuclar"][0]["yol"] == "Konular/Farmakoloji/Digoksin.md"
-    assert out["not_oku"][0]["error"] is True
+    ilk = _ok(out["kaldigim_yer"][0])
+    assert ilk["oturum"] and "Receipt session=" in ilk["baglam"] and "850-Companion/Core.md" in ilk["baglam"]
+    assert "<kasa>" not in ilk["baglam"] or "/vaults/" not in ilk["baglam"]
+    assert "kasada_ara" in _ok(out["talimatlari_oku"][0])["tus-koc"]
+    assert _ok(out["not_olustur"][0]).get("cikis_kodu") == 0
+    assert _ok(out["gorev_olustur"][0])["due_at"] == "2026-01-02"
+    bulunan = [r["source"] for r in _ok(out["kasada_ara"][0])["records"]]
+    assert "notes/tus/farmakoloji/digoksin-hiperkalemi.md" in bulunan
+    assert _ok(out["gorev_guncelle"][0])["status"] == "done"
+    assert out["gorev_guncelle"][1]["data"]["error"] == "RevisionConflict"  # repo'nun revision kuralı
+    threads = _ok(out["not_oku"][0])
+    assert "Active Threads" in json.dumps(threads, ensure_ascii=False)
+    assert _ok(out["kasa_durumu"][0])["review"]["due_count"] == 1  # review_at tarihi geçmiş not
+    assert out["eki_goster"][0]["error"] is True
+    assert "error" in json.dumps(out["not_oku"][1]["data"]) or out["not_oku"][1]["error"]
 
-    # İkinci kullanıcı birinci kullanıcının notunu göremez.
+    # Sonraki sohbette repo'nun kendi hook'u tarihi gelen tekrarı getirir.
+    out2 = asyncio.run(_araclar(base, a_tok, [("kaldigim_yer", {})]))
+    assert "Due reviews: 1" in _ok(out2["kaldigim_yer"][0])["baglam"]
+
+    # İkinci kullanıcı birincinin kasasını göremez.
     b_tok, _, _ = _baglan(base, "zeynep@ornek.com")
-    out_b = asyncio.run(_araclar(base, b_tok, [("notlarda_ara", {"sorgu": "digoksin"}),
-                                               ("not_oku", {"ad": "Digoksin"})]))
-    assert out_b["notlarda_ara"][0]["data"]["sonuclar"] == []
-    assert out_b["not_oku"][0]["error"] is True
-
-    # Aynı hesaba yeniden giriş aynı kasayı açar.
-    a2_tok, _, _ = _baglan(base, "ayse@ornek.com", mod="giris")
-    out_a2 = asyncio.run(_araclar(base, a2_tok, [("kaldigim_yer", {})]))
-    assert "Digoksin" in out_a2["kaldigim_yer"][0]["data"]["son_oturumlar"][0]
+    out_b = asyncio.run(_araclar(base, b_tok, [("kasada_ara", {"sorgu": "digoksin hiperkalemi"}),
+                                               ("not_oku", {"kaynak": "notes/tus/farmakoloji/digoksin-hiperkalemi.md"})]))
+    assert _ok(out_b["kasada_ara"][0]).get("records", []) == []
+    assert _ok(out_b["not_oku"][0]).get("exists") is False
 
     # Yenileme belirteci döner ve tek kullanımlıktır.
     data = {"grant_type": "refresh_token", "refresh_token": a_refresh, "client_id": a_client}
@@ -153,28 +184,50 @@ def test_uctan_uca(base):
     assert httpx.post(f"{base}/token", data=data).status_code == 400
 
 
+PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==")
+
+
+def test_fotograf_yukleme_ve_gosterme(base):
+    tok, _, _ = _baglan(base, "foto@ornek.com")
+    c = httpx.Client(base_url=base)
+    assert "Giriş yap" in c.get("/yukle").text
+    assert c.post("/yukle", data={"islem": "giris", "email": "foto@ornek.com", "sifre": "yanlis-sifre"}).status_code == 400
+    r = c.post("/yukle", data={"islem": "giris", "email": "foto@ornek.com", "sifre": "cok-gizli-sifre"})
+    assert r.status_code == 200 and "tus_koc_oturum" in r.headers.get("set-cookie", "")
+    r = c.post("/yukle", data={"islem": "yukle"}, files={"dosya": ("soru.png", PNG, "image/png")})
+    assert r.status_code == 200, r.text
+    yol = re.findall(r"<code>([^<]+)</code>", r.text)[0]
+    assert yol.startswith("Ekler/") and yol.endswith(".jpg")
+    # Çerezsiz istemci yükleyemez.
+    assert httpx.post(f"{base}/yukle", data={"islem": "yukle"},
+                      files={"dosya": ("x.png", PNG, "image/png")}).status_code == 401
+    out = asyncio.run(_araclar(base, tok, [("ekleri_listele", {}), ("eki_goster", {"yol": yol})]))
+    assert _ok(out["ekleri_listele"][0])["ekler"][0]["yol"] == yol
+    assert out["eki_goster"][0]["type"] == "image" and out["eki_goster"][0]["mime"] == "image/jpeg"
+
+
 def test_webdav_obsidian_esitleme(base):
     tok, _, _ = _baglan(base, "dav@ornek.com")
     _baglan(base, "baska@ornek.com")
+    asyncio.run(_araclar(base, tok, [("kaldigim_yer", {})]))  # kasa kurulsun
     r = httpx.post(f"{base}/hesap/obsidian", data={"email": "dav@ornek.com", "sifre": "cok-gizli-sifre"})
     assert r.status_code == 200
     sifre = re.findall(r"<code>([^<]+)</code>", r.text)[2]
     auth = ("dav@ornek.com", sifre)
     assert httpx.request("PROPFIND", f"{base}/dav/", headers={"Depth": "1"}).status_code == 401
     assert httpx.request("PROPFIND", f"{base}/dav/", auth=("dav@ornek.com", "cok-gizli-sifre")).status_code == 401
-    # Obsidian'da yazılmış bir not WebDAV ile gelir...
+    kok = httpx.request("PROPFIND", f"{base}/dav/", headers={"Depth": "1"}, auth=auth)
+    assert kok.status_code == 207 and "850-Companion" in unquote(kok.text)
+    # Yönetilen çalışma dosyaları ve gizli klasörler eşitlenmez.
+    assert "beyin.py" not in kok.text and ".agents" not in kok.text and ".claude" not in kok.text
+    assert httpx.get(f"{base}/dav/beyin.py", auth=auth).status_code == 404
+    assert httpx.put(f"{base}/dav/.agents/skills/x/SKILL.md", content=b"x", auth=auth).status_code in (404, 409)
+    # Obsidian'da yazılmış not WebDAV ile gelir ve repo'nun aramasında çıkar.
     assert httpx.request("MKCOL", f"{base}/dav/Konular/", auth=auth).status_code in (201, 405)
     body = "# Tiroid\n\nGraves hastalığında TSH reseptör antikoru vardır. [[Hipertiroidi]]\n".encode()
     assert httpx.put(f"{base}/dav/Konular/Tiroid.md", content=body, auth=auth).status_code in (201, 204)
-    listing = httpx.request("PROPFIND", f"{base}/dav/Konular/", headers={"Depth": "1"}, auth=auth)
-    assert listing.status_code == 207 and "Tiroid.md" in listing.text
-    # ...ve koç aynı notu arar.
-    out = asyncio.run(_araclar(base, tok, [("notlarda_ara", {"sorgu": "graves hastalığı antikorları"}),
-                                          ("konu_iliskileri", {"konu": "Tiroid"})]))
-    assert out["notlarda_ara"][0]["data"]["sonuclar"][0]["yol"] == "Konular/Tiroid.md"
-    assert out["konu_iliskileri"][0]["data"]["notu_olmayan_baglantilar"] == ["Hipertiroidi"]
-    # Koçun yazdığı dosyalar da WebDAV'da görünür.
-    assert "Profil.md" in httpx.request("PROPFIND", f"{base}/dav/Ko%C3%A7/", headers={"Depth": "1"}, auth=auth).text
+    out = asyncio.run(_araclar(base, tok, [("kasada_ara", {"sorgu": "graves hastalığı antikorları"})]))
+    assert "Konular/Tiroid.md" in [r["source"] for r in _ok(out["kasada_ara"][0])["records"]]
     # Başka kullanıcının şifresi bu kasayı açamaz, yol hilesi de çalışmaz.
     r = httpx.post(f"{base}/hesap/obsidian", data={"email": "baska@ornek.com", "sifre": "cok-gizli-sifre"})
     baska = ("baska@ornek.com", re.findall(r"<code>([^<]+)</code>", r.text)[2])

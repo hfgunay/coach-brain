@@ -1,11 +1,19 @@
+# Repo kökünden derlenir; sunucu avenoxbeyin'in scripts/ ve template/ klasörlerini kullanır:
+#   docker build -f tus-koc/Dockerfile -t tus-koc .
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    TUS_KOC_DATA_DIR=/data TUS_KOC_HOST=0.0.0.0 PORT=8000
+    TUS_KOC_DATA_DIR=/data TUS_KOC_HOST=0.0.0.0 PORT=8000 \
+    TUS_KOC_BEYIN_KAYNAK=/opt/avenoxbeyin TZ=Europe/Istanbul
+
+# avenoxbeyin motoru: her kullanıcının kasası bunun install_v3.py'si ile kurulur.
+COPY VERSION /opt/avenoxbeyin/VERSION
+COPY scripts /opt/avenoxbeyin/scripts
+COPY template /opt/avenoxbeyin/template
 
 WORKDIR /app
-COPY pyproject.toml README.md ./
-COPY tus_koc ./tus_koc
+COPY tus-koc/pyproject.toml tus-koc/README.md ./
+COPY tus-koc/tus_koc ./tus_koc
 RUN pip install --no-cache-dir . && useradd --create-home --uid 10001 koc && mkdir -p /data && chown koc /data
 
 USER koc
