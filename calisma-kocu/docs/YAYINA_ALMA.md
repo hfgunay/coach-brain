@@ -17,21 +17,21 @@ Railway GitHub reposundan otomatik derler, disk (volume) ve HTTPS adresi verir. 
    - Ek ayar gerekmez: kökteki `railway.json` Dockerfile yolunu (`calisma-kocu/Dockerfile`) Railway'e kendisi söyler.
 3. Servise sağ tıklayın (telefonda uzun basın) → **Attach Volume** → mount path `/data`.
 4. **Settings → Networking → Generate Domain**. Çıkan adresi kopyalayın, örn. `https://calisma-kocu-production.up.railway.app`.
-5. **Variables** sekmesine ekleyin:
+5. **Variables** sekmesine ekleyin.:
 
    | Değişken | Değer |
    | --- | --- |
-   | `KOC_PUBLIC_URL` | 4. adımdaki adres, sonunda `/` olmadan |
-   | `KOC_DATA_DIR` | `/data` |
-   | `KOC_DAVET_KODLARI` | Uzun, tahmin edilemez bir kod (virgülle birden fazla) |
+   | `COACH_PUBLIC_URL` | 4. adımdaki adres. `https://` unutulursa sunucu kendisi ekler; Railway'de boş bırakılırsa Railway'in verdiği alan adı kullanılır |
+   | `COACH_DATA_DIR` | `/data` |
+   | `COACH_INVITE_CODES` | Uzun, tahmin edilemez bir kod (virgülle birden fazla) |
    | `RAILWAY_RUN_UID` | `0` (volume'a yazabilmek için; imaj normalde root olmayan kullanıcıyla çalışır) |
 
    İsteğe bağlı, hatırlatma botu için:
 
    | Değişken | Değer |
    | --- | --- |
-   | `KOC_TELEGRAM_TOKEN` | Telegram'da @BotFather → `/newbot` ile alınan anahtar. **Kimseyle paylaşmayın.** |
-   | `KOC_SABAH_SAATI`, `KOC_AKSAM_SAATI` | Varsayılan `08:30`, `21:30` (öğrenci bottan değiştirebilir) |
+   | `COACH_TELEGRAM_TOKEN` | Telegram'da @BotFather → `/newbot` ile alınan anahtar. **Kimseyle paylaşmayın.** |
+   | `COACH_MORNING_TIME`, `COACH_EVENING_TIME` | Varsayılan `08:30`, `21:30` (öğrenci bottan değiştirebilir) |
 
    Sunucu açılışta webhook'u kendisi kurar (adres https olmalı).
 
@@ -40,7 +40,7 @@ Railway GitHub reposundan otomatik derler, disk (volume) ve HTTPS adresi verir. 
 
 ### Kendi alan adı (isteğe bağlı)
 
-Örn. `koc.ornek.com`: Railway → Networking → Custom Domain, alan adı sağlayıcısında verilen CNAME kaydını açın, sonra `KOC_PUBLIC_URL` değerini yeni adresle değiştirin.
+Örn. `koc.ornek.com`: Railway → Networking → Custom Domain, alan adı sağlayıcısında verilen CNAME kaydını açın, sonra `COACH_PUBLIC_URL` değerini yeni adresle değiştirin.
 
 > Adres değişince OAuth bilgileri de değişir. Daha önce eklenmiş bağlayıcıyı silip yeni adresle yeniden eklemek gerekir. Alan adını kullanıcılar gelmeden önce bağlayın.
 
@@ -51,8 +51,8 @@ git clone https://github.com/hfgunay/coach-brain && cd coach-brain
 docker build -f calisma-kocu/Dockerfile -t calisma-kocu .   # repo kökünden: motor da imaja girer
 docker run -d --name calisma-kocu --restart unless-stopped \
   -p 127.0.0.1:8000:8000 -v calisma-kocu-data:/data \
-  -e KOC_PUBLIC_URL=https://koc.ornek.com \
-  -e KOC_DAVET_KODLARI=uzun-rastgele-kod \
+  -e COACH_PUBLIC_URL=https://koc.ornek.com \
+  -e COACH_INVITE_CODES=uzun-rastgele-kod \
   calisma-kocu
 ```
 

@@ -1,6 +1,6 @@
 """Telegram adaptörü: hatırlatma kanalı ve dosya gelen kutusu.
 
-İnce tutuldu, çünkü kanal geçici olabilir: bu dosya ve `KOC_TELEGRAM_TOKEN` kaldırılınca bot
+İnce tutuldu, çünkü kanal geçici olabilir: bu dosya ve `COACH_TELEGRAM_TOKEN` kaldırılınca bot
 tamamen gider. Telegram'da veri tutulmaz; gelen dosyalar hemen öğrencinin kasasına yazılır.
 Bot dil modeli çağırmaz: sohbet ve soru çözümü öğrencinin kendi Claude'unda kalır.
 """
@@ -67,7 +67,7 @@ class Telegram:
             await self._cagir("setWebhook", url=f"{self.ayarlar.public_url}/telegram/webhook", secret_token=self.gizli,
                               allowed_updates=["message", "callback_query"], drop_pending_updates=False)
         else:
-            log.warning("Telegram webhook kurulmadı: KOC_PUBLIC_URL https değil.")
+            log.warning("Telegram webhook kurulmadı: COACH_PUBLIC_URL https değil.")
 
     async def gonder(self, hedef: str, mesaj: Mesaj) -> None:
         veri: dict[str, Any] = {"chat_id": hedef, "text": mesaj.metin}

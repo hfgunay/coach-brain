@@ -23,8 +23,8 @@ from typing import Any
 
 from mcp.server.mcpserver.exceptions import ToolError
 
-# Repo kökü: calisma-kocu/calisma_kocu/kasa.py -> ../../ ; Docker'da KOC_BEYIN_KAYNAK ile verilir.
-BEYIN_KAYNAK = Path(os.environ.get("KOC_BEYIN_KAYNAK") or Path(__file__).resolve().parents[2])
+# Repo kökü: calisma-kocu/calisma_kocu/kasa.py -> ../../ ; Docker'da COACH_ENGINE_DIR ile verilir.
+BEYIN_KAYNAK = Path(os.environ.get("COACH_ENGINE_DIR") or Path(__file__).resolve().parents[2])
 KOC_SKILL = Path(__file__).resolve().parent / "skill" / "SKILL.md"
 KOC_SKILL_HEDEF = ".agents/skills/calisma-kocu/SKILL.md"
 # Sunucuda yalnız Claude/Codex hook'ları ve çekirdek skill'ler gerekir; masaüstü başlatıcıları
