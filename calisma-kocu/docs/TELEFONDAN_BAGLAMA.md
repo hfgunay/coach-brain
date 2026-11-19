@@ -29,13 +29,13 @@ En kolayı iPhone ya da iPad'de **Safari**'den yapmak. Eklediğin bağlayıcı C
 2. Projenin **Instructions** (talimatlar) alanına şunu yaz: `Her sohbette önce Çalışma Koçu bağlayıcısından kaldigim_yer'i, sonra talimatlari_oku'yu çalıştır.` Koçluk talimatlarının tamamı sunucuda, kasanın içinde durur.
 3. Proje özelliği planında yoksa sorun değil: sunucu kısa talimatı zaten veriyor. Her yeni sohbete "koçum olarak başla" yazman yeterli.
 
-### 3. Fotoğraf yükleme sayfası (bir kez)
+### 3. Yükleme sayfası (bir kez)
 
-Claude, sohbete attığın fotoğrafı bağlayıcıya aktaramaz. Saklanacak soru fotoğrafları için:
+Claude, sohbete attığın dosyayı bağlayıcıya aktaramaz. Saklanacak soru fotoğrafları ve ders notları (PDF, Word, metin) için:
 
 1. Safari'de `<sunucu adresi>/yukle` aç, koç hesabınla giriş yap (90 gün hatırlar).
-2. Paylaş → **Ana Ekrana Ekle**. Artık telefonda "Soru yükle" simgesi var.
-3. Yapamadığın sorunun fotoğrafını oradan yükle, sonra koça "az önce yüklediğim soruya bakalım" yaz. Koç `eki_goster` ile görür.
+2. Paylaş → **Ana Ekrana Ekle**. Artık telefonda bir "Yükle" simgesi var.
+3. Yapamadığın sorunun fotoğrafını ya da ders notunu oradan yükle, sonra koça "yüklediğime bakalım" yaz. Koç fotoğrafı görür, PDF'i okuyup senin notlarına çevirir.
 
 ### 4. Her gün
 

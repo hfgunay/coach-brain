@@ -20,6 +20,7 @@ Bu kasaya terminalden değil, "Çalışma Koçu" bağlayıcısının araçlarıy
 | `receipt` | `sonuc_kaydet` (oturum = `kaldigim_yer`'in verdiği değer) |
 | `learn` | `ogrenim_adayi` |
 | `triage` / `recap` | `kasa_durumu` / `son_sonuclar` |
+| `yakala liste` / `isle` / `bitti` | `yakalananlar` / `yakalanani_oku` / `yakalanan_bitti` |
 
 Komut çıktısındaki kurallar aynen geçerlidir: çakışmada yeniden oku, revision ya da sha tahmin etme, `failed`/`conflict` sonucunu başarı diye sunma.
 
@@ -31,7 +32,18 @@ Core.md boşsa AGENTS.md'deki ilk kurulum konuşmasını yap ve Core.md'ye yaz. 
 - sınavın dersleri ve konu dağılımı: öğrenciye sor, resmi kaynaktan doğrula, uydurma
 - her ders için: en son ne zaman tekrar ettiği, kendine 1-5 arası puanı, son deneme ya da sınavdaki neti
 
+- elindeki materyal: ders notu, özet, PDF, slayt. Varsa **Yükle** sayfasından atmasını iste; bunları onun kendi notlarına çevireceğini söyle.
+
 Ders durumlarını Core.md'de kısa bir tabloda tut. Bir seferde iki üç soru sor, sorgu gibi değil sohbet gibi.
+
+## Ders notu ve PDF
+
+Öğrencinin yüklediği belgeler repodaki Yakala gelen kutusuna düşer; `kaldigim_yer` bekleyen kaynak sayısını gösterir.
+
+- `yakalananlar` ile bekleyenleri gör, `yakalanani_oku` ile metnini oku (uzunsa `devam` değeriyle sürdür).
+- Belgeyi kopyalama; konu konu işle. Her konu için `kasada_ara` ile mevcut notu bul; varsa `not_duzenle` ile genişlet, yoksa `not_olustur` ile `knowledge/<ders>/` altına yaz. Kaynak belgeye bağlantı ver, konular arasında `[[...]]` kur.
+- Bitince `yakalanan_bitti` ile yazdığın notları karta bağla. Metin çıkmadıysa (taranmış PDF) öğrenciden sayfa fotoğrafı iste.
+- Öğrencinin kendi materyali, genel bilgiden önce gelir: soru hazırlarken ve konu anlatırken önce buna dayan.
 
 ## Öncelik
 
@@ -50,7 +62,7 @@ Hangi derse ağırlık verileceğine öğrenciyle birlikte karar ver; şu üç �
 
 ## Yapamadığı sorular
 
-- Öğrenci soruyu sohbete fotoğraf olarak atabilir. Kalıcı saklamak isterse fotoğrafı **Fotoğraf yükle** sayfasından gönderir; `ekleri_listele` ve `eki_goster` ile görürsün.
+- Öğrenci soruyu sohbete fotoğraf olarak atabilir. Kalıcı saklamak isterse fotoğrafı **Yükle** sayfasından gönderir; `ekleri_listele` ve `eki_goster` ile görürsün.
 - Soruyu birlikte çöz. Sonra soruyu, doğru cevabı, neden yanlış yapıldığını ve kısa çözüm notunu `not_olustur` ile yaz. Repo kuralı gereği yeni not `notes/` altına gider; alt klasörü ve sınıflandırmayı içeriğe göre sen seç (örn. `notes/sinav/<ders>/...`). Fotoğraf varsa notta `![[Ekler/...]]` ile bağla, konu notuna `[[...]]` ile bağla.
 - Tekrar edilmesi gereken nota `review_at` ver (ilk tekrar 1-3 gün sonra). Tarihi gelince `kaldigim_yer` bunu "Due reviews" olarak getirir. Tekrarda bildiyse `review_at` tarihini ileri al, bilemediyse yakına çek.
 - "Yapamadıklarımdan soru hazırla" denince bu notları `kasada_ara` ile bul, aynı kavramı ve aynı tuzağı test eden **yeni** sorular yaz; aynı soruyu tekrar sorma.

@@ -14,7 +14,8 @@ COPY template /opt/avenoxbeyin/template
 WORKDIR /app
 COPY calisma-kocu/pyproject.toml calisma-kocu/README.md ./
 COPY calisma-kocu/calisma_kocu ./calisma_kocu
-RUN pip install --no-cache-dir . && useradd --create-home --uid 10001 koc && mkdir -p /data && chown koc /data
+RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir . && useradd --create-home --uid 10001 koc && mkdir -p /data && chown koc /data
 
 USER koc
 VOLUME ["/data"]

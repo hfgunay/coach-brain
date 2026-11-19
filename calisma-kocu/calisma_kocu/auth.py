@@ -14,12 +14,14 @@ import hashlib
 import hmac
 import html
 import json
+import logging
 import secrets
 import time
 from collections import defaultdict, deque
 from urllib.parse import urlparse
 
 from pydantic import AnyUrl
+from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
@@ -29,6 +31,7 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 
 from .config import Ayarlar
 from .db import DB, token_hash
+from .kasa import KasaHatasi
 
 KAPSAM = "koc"
 ISTEK_SURESI = 15 * 60
@@ -226,7 +229,7 @@ def _form(istek: str, mod: str, hata: str = "", email: str = "", davet_gerekli: 
 
 CEREZ = "calisma_kocu_oturum"
 CEREZ_SURESI = 90 * 24 * 3600
-MAKS_YUKLEME = 15 * 1024 * 1024
+MAKS_YUKLEME = 25 * 1024 * 1024
 
 
 class HesapSayfalari:
@@ -357,23 +360,25 @@ class HesapSayfalari:
 
 
     async def yukle(self, request: Request, kaydet) -> Response:
-        """Soru fotoğraflarını kasaya yükler. İlk girişten sonra 90 gün çerezle hatırlar;
+        """Soru fotoğraflarını ve ders notlarını (PDF, Word, metin) kasaya yükler. İlk girişten sonra 90 gün çerezle hatırlar;
         iPhone'da "Ana Ekrana Ekle" ile tek dokunuşluk yükleme düğmesi olur."""
         user_id = self.cerez_coz(request.cookies.get(CEREZ))
         giris_formu = (
-            "<h1>Fotoğraf yükle</h1><p class='muted'>Koç hesabınla bir kez giriş yap; bu telefon hatırlanır.</p>"
+            "<h1>Yükle</h1><p class='muted'>Koç hesabınla bir kez giriş yap; bu telefon hatırlanır.</p>"
             "<form method='post'><input type='hidden' name='islem' value='giris'>"
             "<label for='email'>E-posta</label><input id='email' name='email' type='email' autocomplete='username' required>"
             "<label for='sifre'>Şifre</label><input id='sifre' name='sifre' type='password' autocomplete='current-password' required>"
             "<button type='submit'>Giriş yap</button>")
         yukleme_formu = (
-            "<h1>Fotoğraf yükle</h1><p class='muted'>Çözemediğin sorunun fotoğrafını seç. Sonra koça "
-            "\"yüklediğim soruya bakalım\" yaz.</p>"
+            "<h1>Yükle</h1><p class='muted'>Çözemediğin sorunun fotoğrafı ya da ders notun (PDF, Word, metin). "
+            "Sonra koça \"yüklediğime bakalım\" yaz.</p>"
             "<form method='post' enctype='multipart/form-data'><input type='hidden' name='islem' value='yukle'>"
-            "<input type='file' name='dosya' accept='image/*,application/pdf' multiple required>"
+            "<input type='file' name='dosya' accept='image/*,.pdf,.docx,.txt,.md,.csv' multiple required>"
+            "<label for='neden'>Not (isteğe bağlı)</label>"
+            "<input id='neden' name='neden' placeholder='örn. Endokrin ders notu, 3. hafta'>"
             "<button type='submit'>Yükle</button></form>")
         if request.method == "GET":
-            return sayfa("Fotoğraf yükle", yukleme_formu if user_id else giris_formu + "</form>")
+            return sayfa("Yükle", yukleme_formu if user_id else giris_formu + "</form>")
         form = await request.form()
         if form.get("islem") == "giris":
             ip = self._ip(request)
@@ -382,25 +387,31 @@ class HesapSayfalari:
             uid = self.db.giris(str(form.get("email", "")), str(form.get("sifre", "")))
             if not uid:
                 self.sinir.hata(ip)
-                return sayfa("Fotoğraf yükle", giris_formu + "<div class='err'>E-posta ya da şifre hatalı.</div></form>", 400)
-            yanit = sayfa("Fotoğraf yükle", yukleme_formu)
+                return sayfa("Yükle", giris_formu + "<div class='err'>E-posta ya da şifre hatalı.</div></form>", 400)
+            yanit = sayfa("Yükle", yukleme_formu)
             yanit.set_cookie(CEREZ, self.cerez_uret(uid), max_age=CEREZ_SURESI, httponly=True, samesite="strict",
                              secure=self.ayarlar.public_url.startswith("https://"), path="/yukle")
             return yanit
         if not user_id:
-            return sayfa("Fotoğraf yükle", giris_formu + "</form>", 401)
+            return sayfa("Yükle", giris_formu + "</form>", 401)
         dosyalar = []
         for item in form.getlist("dosya"):
             if not hasattr(item, "read"):
                 continue
             veri = await item.read()
             if len(veri) > MAKS_YUKLEME:
-                return sayfa("Fotoğraf yükle", yukleme_formu + "<div class='err'>Dosya 15 MB'tan büyük.</div>", 413)
+                return sayfa("Yükle", yukleme_formu + "<div class='err'>Dosya 25 MB'tan büyük.</div>", 413)
             if veri:
                 dosyalar.append((item.filename or "foto.jpg", veri))
         if not dosyalar:
-            return sayfa("Fotoğraf yükle", yukleme_formu + "<div class='err'>Dosya seçilmedi.</div>", 400)
-        yollar = kaydet(user_id, dosyalar[:10])
+            return sayfa("Yükle", yukleme_formu + "<div class='err'>Dosya seçilmedi.</div>", 400)
+        try:
+            yollar = await run_in_threadpool(kaydet, user_id, dosyalar[:10], str(form.get("neden", ""))[:300])
+        except KasaHatasi as exc:
+            return sayfa("Yükle", yukleme_formu + f"<div class='err'>{html.escape(str(exc))[:300]}</div>", 400)
+        except Exception:  # noqa: BLE001 - iç ayrıntıyı (yolları) öğrenciye gösterme
+            logging.getLogger(__name__).exception("yükleme")
+            return sayfa("Yükle", yukleme_formu + "<div class='err'>Yükleme başarısız, tekrar dene.</div>", 500)
         liste = "".join(f"<li><code>{html.escape(y)}</code></li>" for y in yollar)
-        return sayfa("Yüklendi", f"<h1>Yüklendi</h1><p class='muted'>Koça \"yüklediğim soruya bakalım\" yaz.</p>"
+        return sayfa("Yüklendi", f"<h1>Yüklendi</h1><p class='muted'>Koça \"yüklediğime bakalım\" yaz.</p>"
                                  f"<ul>{liste}</ul><p><a href='/yukle'>Bir tane daha yükle</a></p>")

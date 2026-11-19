@@ -3,14 +3,14 @@ import asyncio
 import base64
 import hashlib
 import json
-from urllib.parse import unquote
 import re
 import secrets
+import shutil
 import socket
 import threading
 import time
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import httpx
 import httpx2
@@ -233,3 +233,40 @@ def test_webdav_obsidian_esitleme(base):
     baska = ("baska@ornek.com", re.findall(r"<code>([^<]+)</code>", r.text)[2])
     assert httpx.get(f"{base}/dav/Konular/Tiroid.md", auth=baska).status_code == 404
     assert httpx.get(f"{base}/dav/..%2F..%2Fcalisma_kocu.sqlite3", auth=baska).status_code in (400, 403, 404)
+
+
+def test_ders_notu_ve_pdf_yakala_gelen_kutusuna(base):
+    tok, _, _ = _baglan(base, "belge@ornek.com")
+    c = httpx.Client(base_url=base)
+    c.post("/yukle", data={"islem": "giris", "email": "belge@ornek.com", "sifre": "cok-gizli-sifre"})
+    pdf = (Path(__file__).parent / "ornek_ders.pdf").read_bytes()
+    r = c.post("/yukle", data={"islem": "yukle", "neden": "Endokrin ders notu"},
+               files=[("dosya", ("Endokrin özet.pdf", pdf, "application/pdf")),
+                      ("dosya", ("tiroid.txt", "Tiroid fırtınası: ateş, taşikardi.\n".encode(), "text/plain"))])
+    assert r.status_code == 200, r.text
+    assert len(re.findall(r"000-Inbox/Yakala/[^<]+\.md", r.text)) == 2
+    out = asyncio.run(_araclar(base, tok, [("yakalananlar", {"durum": "bekliyor"})]))
+    kartlar = _ok(out["yakalananlar"][0])["kartlar"]
+    assert len(kartlar) == 2
+    txt = next(k["id"] for k in kartlar if "tiroid" in k["id"])
+    pdf_id = next(k["id"] for k in kartlar if k["id"] != txt)
+    cagrilar = [("yakalanani_oku", {"id": txt}),
+                ("not_olustur", {"kaynak": "knowledge/endokrin/tiroid-firtinasi.md",
+                                 "metin": "# Tiroid fırtınası\n\nAteş ve taşikardi.\n", "metadata": {"title": "Tiroid fırtınası"}}),
+                ("yakalanan_bitti", {"id": txt, "bilgi_notlari": ["knowledge/endokrin/tiroid-firtinasi.md"]}),
+                ("yakalanani_oku", {"id": "olmayan-kart"}),
+                ("kaldigim_yer", {})]
+    if shutil.which("pdftotext"):
+        cagrilar.append(("yakalanani_oku", {"id": pdf_id}))
+    out = asyncio.run(_araclar(base, tok, cagrilar))
+    assert "Tiroid fırtınası" in _ok(out["yakalanani_oku"][0])["metin"]
+    assert _ok(out["not_olustur"][0])["cikis_kodu"] == 0
+    assert "error" not in _ok(out["yakalanan_bitti"][0])
+    assert out["yakalanani_oku"][1]["error"] is True
+    if shutil.which("pdftotext"):
+        assert "Graves" in _ok(out["yakalanani_oku"][2])["metin"]
+    # Yüklenen PDF kasada durur (Obsidian'da açılır), çıkarılan ham metin gizli klasörde.
+    r = httpx.post(f"{base}/hesap/obsidian", data={"email": "belge@ornek.com", "sifre": "cok-gizli-sifre"})
+    auth = ("belge@ornek.com", re.findall(r"<code>([^<]+)</code>", r.text)[2])
+    liste = httpx.request("PROPFIND", f"{base}/dav/{quote('📥 000-Inbox/Yakala/dosyalar/')}", headers={"Depth": "1"}, auth=auth)
+    assert liste.status_code == 207 and ".pdf" in unquote(liste.text)

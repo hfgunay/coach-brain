@@ -72,6 +72,9 @@ class Kasa:
                                        env=self._env(), cwd=str(self.vault))
                 if sonuc.returncode != 0 or not self.kurulu_mu():
                     raise KasaHatasi("Kasa kurulamadı: " + (sonuc.stdout + sonuc.stderr)[-800:])
+                # Sunucuda her kasa için günlük GitHub sürüm kontrolü gereksiz; motorun kendi ayarıyla kapat.
+                self._calistir(["--vault", str(self.vault), "--state", str(self.state),
+                                "preferences", "--update-notifications", "off"], None, 60)
             self._skill_koy()
             self.tmp.mkdir(parents=True, exist_ok=True)
 
@@ -97,8 +100,16 @@ class Kasa:
         repodaki kurala göre yeniden okuyup tekrar dener.
         """
         self.hazirla()
-        cmd = [sys.executable, str(self.vault / "beyin.py"), "--vault", str(self.vault), "--state", str(self.state),
-               "--json", *args]
+        return self._calistir(["--vault", str(self.vault), "--state", str(self.state), *args], girdi, timeout)
+
+    def yakala(self, *args: str, timeout: int = 180) -> dict[str, Any]:
+        """Repodaki Yakala gelen kutusu: `beyin.py yakala <args>` (ekle, liste, isle, bitti).
+        Yakala kendi küçük CLI'ıdır; kasa ve state yolunu kurulumun .beyin-runtime.json'undan alır."""
+        self.hazirla()
+        return self._calistir(["yakala", *args], None, timeout)
+
+    def _calistir(self, args: list[str], girdi: dict | None, timeout: int) -> dict[str, Any]:
+        cmd = [sys.executable, str(self.vault / "beyin.py"), "--json", *args]
         dosya = None
         if girdi is not None:
             dosya = self.tmp / f"{uuid.uuid4().hex}.json"

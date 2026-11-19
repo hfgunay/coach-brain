@@ -15,8 +15,11 @@ from __future__ import annotations
 
 import io
 import logging
+import re
+import shutil
 import uuid
 from datetime import datetime, timedelta
+from pathlib import PurePath
 from typing import Annotated, Any
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -42,6 +45,9 @@ log = logging.getLogger("calisma_kocu")
 SAAT_DILIMI = ZoneInfo("Europe/Istanbul")
 EKLER = "Ekler"
 RESIM_UZANTILARI = {".jpg": "jpeg", ".jpeg": "jpeg", ".png": "png", ".webp": "webp", ".gif": "gif"}
+# Repodaki Yakala'nın metnini çıkarabildiği belge türleri (pdftotext, beyin_v3_docx, düz metin).
+BELGE_UZANTILARI = {".pdf", ".docx", ".txt", ".md", ".csv"}
+YAKALA_PARCA = 40_000
 
 TALIMAT = (
     "Bu bağlayıcı öğrencinin avenoxbeyin ikinci beynine (Obsidian uyumlu kasa) erişir ve sınav/ders çalışma "
@@ -242,6 +248,60 @@ def uygulama_kur(ayarlar: Ayarlar | None = None):
             raise KasaHatasi("Bu bir görüntü eki değil ya da bulunamadı.")
         return Image(data=path.read_bytes(), format=format_)
 
+    # --- ders notu, PDF: repodaki Yakala gelen kutusu ------------------------
+    @mcp.tool(title="Yakalananlar", annotations=OKU)
+    def yakalananlar(
+        durum: Annotated[str | None, Field(description="bekliyor, cikarildi, islendi, hata; boşsa hepsi")] = None,
+    ) -> dict[str, Any]:
+        """beyin `yakala liste`: öğrencinin yüklediği ders notları ve PDF'ler (gelen kutusu kartları)."""
+        return kasa().yakala("liste", *(["--durum", durum] if durum else []))
+
+    @mcp.tool(title="Yakalananı oku", annotations=YAZ)
+    def yakalanani_oku(
+        id: Annotated[str, Field(description="yakalananlar'ın verdiği kart kimliği")],
+        baslangic: Annotated[int, Field(description="Uzun belgede kaçıncı karakterden devam edilecek")] = 0,
+    ) -> dict[str, Any]:
+        """Kartın metnini döndürür; henüz çıkarılmadıysa önce beyin `yakala isle` ile çıkarır.
+        Okuduktan sonra bilgiyi `not_olustur` ile knowledge/ ya da notes/ altına yaz ve `yakalanan_bitti` çağır."""
+        k = kasa()
+        kart = next((c for c in k.yakala("liste").get("kartlar", []) if c.get("id") == id), None)
+        if kart is None:
+            raise KasaHatasi("Böyle bir kart yok; yakalananlar ile bak.")
+        islem = None
+        if not kart.get("ham"):
+            if kart.get("kaynak_turu") != "dosya":
+                # Bağlantı kartları sunucudan ağa çıkmayı gerektirir; sunucu bunu yapmaz.
+                raise KasaHatasi("Bu kart bir bağlantı; sunucu bağlantıları açmaz. İçeriği öğrenciden iste.")
+            islem = k.yakala("isle", id)
+            kart = next((c for c in islem.get("kartlar", []) if c.get("id") == id), kart)
+        ham = kart.get("ham")
+        if not ham:
+            return {"kart": kart, "islem": islem, "metin": None,
+                    "uyari": "Metin çıkarılamadı (taranmış PDF olabilir). Öğrenciden sayfaların fotoğrafını iste."}
+        yol = (k.vault / ham).resolve()
+        if k.vault not in yol.parents or not yol.is_file():
+            raise KasaHatasi("Kartın metin dosyası bulunamadı.")
+        metin = yol.read_text(encoding="utf-8", errors="replace")
+        baslangic = max(0, baslangic)
+        parca = metin[baslangic:baslangic + YAKALA_PARCA]
+        son = baslangic + len(parca)
+        return {"kart": {x: kart.get(x) for x in ("id", "baslik", "neden", "durum", "kart")}, "metin": parca,
+                "toplam_karakter": len(metin), "devam": son if son < len(metin) else None}
+
+    @mcp.tool(title="Yakalanan bitti", annotations=YAZ)
+    def yakalanan_bitti(
+        id: Annotated[str, Field(description="Kart kimliği")],
+        bilgi_notlari: Annotated[list[str], Field(description="Bu kaynaktan yazılan ya da güncellenen notların yolları")],
+        ozet: Annotated[str | None, Field(description="Kısa özet")] = None,
+    ) -> dict[str, Any]:
+        """beyin `yakala bitti`: kartı işlendi olarak kapatır ve yazılan notlara bağlar."""
+        args = ["bitti", id]
+        for n in bilgi_notlari:
+            args += ["--bilgi", n]
+        if ozet:
+            args += ["--ozet", ozet]
+        return kasa().yakala(*args)
+
     @mcp.prompt(name="calisma_kocu", title="Çalışma koçu", description="Çalışma koçu skill'i ve bağlayıcı araç karşılıkları")
     def calisma_kocu_istemi() -> str:
         return KOC_SKILL.read_text(encoding="utf-8")
@@ -259,14 +319,20 @@ def uygulama_kur(ayarlar: Ayarlar | None = None):
     async def yukle(request: Request) -> Response:
         return await hesap.yukle(request, ekleri_kaydet)
 
-    def ekleri_kaydet(user_id: str, dosyalar: list[tuple[str, bytes]]) -> list[str]:
+    def ekleri_kaydet(user_id: str, dosyalar: list[tuple[str, bytes]], neden: str = "") -> list[str]:
+        """Fotoğraflar Ekler/ altına (koç eki_goster ile görür). Ders notu ve PDF'ler repodaki Yakala
+        gelen kutusuna (`yakala ekle`); koç yakalanani_oku ile metnini okuyup nota çevirir."""
         k = Kasa(ayarlar.vault_root, ayarlar.state_root, user_id)
         k.hazirla()
         simdi = datetime.now(SAAT_DILIMI)
         klasor = k.vault / EKLER / simdi.strftime("%Y-%m-%d")
-        klasor.mkdir(parents=True, exist_ok=True)
         yollar = []
         for i, (ad, veri) in enumerate(dosyalar, 1):
+            uzanti = PurePath(ad).suffix.lower()
+            if uzanti in BELGE_UZANTILARI:
+                yollar.append(belgeyi_yakala(k, ad, veri, neden))
+                continue
+            klasor.mkdir(parents=True, exist_ok=True)
             veri, uzanti = kucult(veri, ad)
             hedef = klasor / f"{simdi.strftime('%H%M%S')}-{i}{uzanti}"
             hedef.write_bytes(veri)
@@ -283,7 +349,7 @@ def uygulama_kur(ayarlar: Ayarlar | None = None):
         return sayfa("Çalışma Koçu", (
             "<h1>Çalışma Koçu</h1><p class='muted'>Claude ya da ChatGPT'ye özel bağlayıcı olarak ekleyin:</p>"
             f"<code>{ayarlar.public_url}/mcp</code>"
-            "<p class='muted' style='margin-top:20px'><a href='/yukle'>Fotoğraf yükle</a> · "
+            "<p class='muted' style='margin-top:20px'><a href='/yukle'>Soru ya da ders notu yükle</a> · "
             "<a href='/hesap/obsidian'>Obsidian eşitleme</a></p>"))
 
     host = urlparse(ayarlar.public_url).netloc
@@ -298,10 +364,25 @@ def uygulama_kur(ayarlar: Ayarlar | None = None):
     return app
 
 
+def belgeyi_yakala(k: Kasa, ad: str, veri: bytes, neden: str) -> str:
+    """Belgeyi özgün adıyla geçici klasöre yazıp `beyin.py yakala ekle`ye verir; Yakala onu kendi
+    dosyalar/ klasörüne kopyalar ve kart açar."""
+    guvenli = re.sub(r"[^\w.\- ]+", "_", PurePath(ad).name).strip(" .") or "belge"
+    gecici = k.tmp / uuid.uuid4().hex
+    gecici.mkdir(parents=True)
+    try:
+        (gecici / guvenli).write_bytes(veri)
+        sonuc = k.yakala("ekle", str(gecici / guvenli), "--neden", neden or "Öğrencinin yüklediği ders materyali",
+                         "--arac", "yukleme")
+    finally:
+        shutil.rmtree(gecici, ignore_errors=True)
+    if sonuc.get("error") or not sonuc.get("path"):
+        raise KasaHatasi("Belge kaydedilemedi: " + str(sonuc.get("message") or sonuc.get("error")))
+    return sonuc["path"]
+
+
 def kucult(veri: bytes, ad: str, kenar: int = 2000) -> tuple[bytes, str]:
     """Telefon fotoğrafını Claude'un rahat okuyacağı boyuta indirir (JPEG). Okunamazsa olduğu gibi bırakır."""
-    from pathlib import PurePath
-
     uzanti = PurePath(ad).suffix.lower() or ".bin"
     try:
         from PIL import Image as PILImage, ImageOps
