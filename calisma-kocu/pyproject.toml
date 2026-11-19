@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calisma-kocu"
-version = "0.2.0"
+version = "0.3.0"
 description = "avenoxbeyin kasasını uzak MCP bağlayıcısı olarak sunan sınav ve ders çalışma koçu sunucusu"
 readme = "README.md"
 license = { text = "MIT" }

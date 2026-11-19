@@ -26,6 +26,15 @@ Railway GitHub reposundan otomatik derler, disk (volume) ve HTTPS adresi verir. 
    | `KOC_DAVET_KODLARI` | Uzun, tahmin edilemez bir kod (virgülle birden fazla) |
    | `RAILWAY_RUN_UID` | `0` (volume'a yazabilmek için; imaj normalde root olmayan kullanıcıyla çalışır) |
 
+   İsteğe bağlı, hatırlatma botu için:
+
+   | Değişken | Değer |
+   | --- | --- |
+   | `KOC_TELEGRAM_TOKEN` | Telegram'da @BotFather → `/newbot` ile alınan anahtar. **Kimseyle paylaşmayın.** |
+   | `KOC_SABAH_SAATI`, `KOC_AKSAM_SAATI` | Varsayılan `08:30`, `21:30` (öğrenci bottan değiştirebilir) |
+
+   Sunucu açılışta webhook'u kendisi kurar (adres https olmalı).
+
 6. Yeniden dağıtım bitince tarayıcıda `<adres>/saglik` açın. `{"durum":"iyi"}` görmelisiniz.
 7. Öğrenciye **bağlayıcı adresini** (`<adres>/mcp`) ve **davet kodunu** verin, sonra [Telefondan bağlama](TELEFONDAN_BAGLAMA.md) rehberini izleyin.
 

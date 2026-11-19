@@ -50,6 +50,25 @@ CREATE TABLE IF NOT EXISTS oauth_tokens (
     created REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS oauth_tokens_user ON oauth_tokens(user_id, client_id);
+-- Hatırlatma kanalı (Telegram vb.): yalnız "kime, ne zaman" bilgisi; içerik kasadan gelir.
+CREATE TABLE IF NOT EXISTS kanal_baglantilari (
+    user_id TEXT NOT NULL,
+    kanal TEXT NOT NULL,
+    hedef TEXT NOT NULL,
+    sabah TEXT NOT NULL,
+    aksam TEXT NOT NULL,
+    sessiz INTEGER NOT NULL DEFAULT 0,
+    son_sabah TEXT,
+    son_aksam TEXT,
+    created REAL NOT NULL,
+    PRIMARY KEY (user_id, kanal),
+    UNIQUE (kanal, hedef)
+);
+CREATE TABLE IF NOT EXISTS baglanti_kodlari (
+    kod_hash TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    expires REAL NOT NULL
+);
 """
 
 
@@ -123,9 +142,52 @@ class DB:
             return None
         return row["id"]
 
+    # --- hatırlatma kanalları ------------------------------------------
+    def baglanti_kodu_uret(self, user_id: str, saniye: int = 15 * 60) -> str:
+        kod = secrets.token_urlsafe(24)
+        self.x("INSERT INTO baglanti_kodlari (kod_hash, user_id, expires) VALUES (?, ?, ?)",
+               (token_hash(kod), user_id, time.time() + saniye))
+        return kod
+
+    def baglanti_kodu_kullan(self, kod: str) -> str | None:
+        """Tek kullanımlık: kod doğruysa siler ve kullanıcıyı döndürür."""
+        with self._lock:
+            row = self._conn.execute("DELETE FROM baglanti_kodlari WHERE kod_hash = ? AND expires > ? RETURNING user_id",
+                                     (token_hash(kod), time.time())).fetchone()
+        return row["user_id"] if row else None
+
+    def baglan(self, user_id: str, kanal: str, hedef: str, sabah: str, aksam: str, bugun: str, saat: str) -> None:
+        """Kanalı kullanıcıya bağlar. Saati bugün geçmiş mesajlar bağlanır bağlanmaz gönderilmesin."""
+        self.x("DELETE FROM kanal_baglantilari WHERE kanal = ? AND hedef = ?", (kanal, hedef))
+        self.x("INSERT OR REPLACE INTO kanal_baglantilari (user_id, kanal, hedef, sabah, aksam, son_sabah, son_aksam,"
+               " created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+               (user_id, kanal, hedef, sabah, aksam, bugun if saat >= sabah else None,
+                bugun if saat >= aksam else None, time.time()))
+
+    def baglanti(self, kanal: str, hedef: str) -> sqlite3.Row | None:
+        rows = self.q("SELECT * FROM kanal_baglantilari WHERE kanal = ? AND hedef = ?", (kanal, hedef))
+        return rows[0] if rows else None
+
+    def baglantilar(self) -> list[sqlite3.Row]:
+        return self.q("SELECT * FROM kanal_baglantilari")
+
+    def baglanti_guncelle(self, kanal: str, hedef: str, **alanlar: Any) -> None:
+        izinli = {"sabah", "aksam", "sessiz", "son_sabah", "son_aksam"}
+        assert set(alanlar) <= izinli
+        for alan, deger in alanlar.items():
+            self.x(f"UPDATE kanal_baglantilari SET {alan} = ? WHERE kanal = ? AND hedef = ?", (deger, kanal, hedef))
+
+    def baglanti_gonderildi(self, user_id: str, kanal: str, alan: str, bugun: str) -> None:
+        assert alan in ("son_sabah", "son_aksam")
+        self.x(f"UPDATE kanal_baglantilari SET {alan} = ? WHERE user_id = ? AND kanal = ?", (bugun, user_id, kanal))
+
+    def baglantiyi_kaldir(self, kanal: str, hedef: str) -> None:
+        self.x("DELETE FROM kanal_baglantilari WHERE kanal = ? AND hedef = ?", (kanal, hedef))
+
     # --- OAuth ---------------------------------------------------------
     def temizle(self) -> None:
         now = time.time()
+        self.x("DELETE FROM baglanti_kodlari WHERE expires < ?", (now,))
         self.x("DELETE FROM oauth_pending WHERE expires < ?", (now,))
         self.x("DELETE FROM oauth_codes WHERE expires < ?", (now,))
         self.x("DELETE FROM oauth_tokens WHERE expires IS NOT NULL AND expires < ?", (now,))
