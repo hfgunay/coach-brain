@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils &
     && pip install --no-cache-dir . && useradd --create-home --uid 10001 koc && mkdir -p /data && chown koc /data
 
 USER koc
-VOLUME ["/data"]
+# Kalıcı disk platformdan bağlanır (Railway Volume ya da docker run -v ...:/data).
+# VOLUME satırı yok: Railway onu reddediyor.
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import os,urllib.request;urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/saglik')"
 CMD ["calisma-kocu"]
