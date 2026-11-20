@@ -34,3 +34,16 @@ def test_defaults():
 
 def test_old_names_are_ignored():
     assert Settings.from_env({"KOC_TELEGRAM_TOKEN": "t"}).telegram_token == ""
+
+
+def test_old_oauth_scope_is_migrated(tmp_path):
+    import json
+    from coach.db import DB
+    db = DB(tmp_path / "coach.sqlite3")
+    db.x("INSERT INTO oauth_tokens (token_hash, kind, client_id, user_id, scopes, resource, expires, created)"
+         " VALUES ('h', 'access', 'c', 'u', '[\"koc\"]', NULL, NULL, 0)")
+    db.x("INSERT INTO oauth_clients (client_id, data, created) VALUES ('c', ?, 0)",
+         (json.dumps({"client_id": "c", "scope": "koc", "redirect_uris": ["https://claude.ai/cb"]}),))
+    db = DB(tmp_path / "coach.sqlite3")
+    assert json.loads(db.q("SELECT scopes FROM oauth_tokens")[0]["scopes"]) == ["coach"]
+    assert json.loads(db.q("SELECT data FROM oauth_clients")[0]["data"])["scope"] == "coach"

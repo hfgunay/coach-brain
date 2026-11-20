@@ -6,6 +6,7 @@ vault set up for each user (vault.py).
 from __future__ import annotations
 
 import hashlib
+import json
 import hmac
 import secrets
 import sqlite3
@@ -123,6 +124,15 @@ class DB:
                 " muted, last_morning, last_evening, created) SELECT user_id, kanal, hedef, sabah, aksam,"
                 " 'Europe/Istanbul', 'tr', sessiz, son_sabah, son_aksam, created FROM kanal_baglantilari")
             self._conn.execute("DROP TABLE kanal_baglantilari")
+        # The OAuth scope was "koc"; connectors added then keep working without signing in again.
+        self._conn.execute("UPDATE oauth_tokens SET scopes = replace(scopes, '\"koc\"', '\"coach\"')"
+                           " WHERE scopes LIKE '%\"koc\"%'")
+        for row in self._conn.execute("SELECT client_id, data FROM oauth_clients WHERE data LIKE '%koc%'").fetchall():
+            data = json.loads(row["data"])
+            if "koc" in (data.get("scope") or "").split():
+                data["scope"] = " ".join("coach" if s == "koc" else s for s in data["scope"].split())
+                self._conn.execute("UPDATE oauth_clients SET data = ? WHERE client_id = ?",
+                                   (json.dumps(data), row["client_id"]))
         if "baglanti_kodlari" in tables:
             self._conn.execute("DROP TABLE baglanti_kodlari")  # short-lived codes; a new one is one tap away
 
