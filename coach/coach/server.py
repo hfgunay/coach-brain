@@ -132,8 +132,14 @@ def create_app(settings: Settings | None = None):
         and the study coach skill (including how the connector tools map to the commands). Read once per conversation.
         `all` also lists the built-in exam profiles; read the student's one with which='exam'."""
         if which == "exam" or exam:
-            return {"exam": exam_profile(exam or ""), "note": "A starting point, not the source of truth: verify "
-                    "dates and anything marked 'verify' with web search when you have it."}
+            text = exam_profile(exam or "")
+            meta = next(p for p in exam_profiles() if p["id"] == (exam or "").strip().lower())
+            note = ("A starting point, not the source of truth: verify dates and anything marked 'verify' with web "
+                    "search when you have it.")
+            if meta["stale"]:
+                note += " This profile is stale (not checked recently): re-check every number before relying on it."
+            return {"exam": text, "stale": meta["stale"], "last_checked": meta["last_checked"],
+                    "sources": meta["sources"], "note": note}
         if which == "exams":
             return {"exams": exam_profiles()}
         v = vault()

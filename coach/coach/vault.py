@@ -18,6 +18,7 @@ import subprocess
 import sys
 import threading
 import uuid
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ ENGINE_DIR = Path(os.environ.get("COACH_ENGINE_DIR") or Path(__file__).resolve()
 SKILL_DIR = Path(__file__).resolve().parent / "skill"
 COACH_SKILL = SKILL_DIR / "SKILL.md"
 EXAMS_DIR = SKILL_DIR / "exams"  # one Markdown profile per exam; adding an exam is adding a file
+STALE_AFTER_DAYS = 120  # a profile not checked against its sources for this long is served as stale
 SKILL_TARGET_DIR = ".agents/skills/study-coach"
 COACH_SKILL_TARGET = SKILL_TARGET_DIR + "/SKILL.md"
 EXAMS_TARGET_DIR = SKILL_TARGET_DIR + "/exams"
@@ -217,14 +219,24 @@ def _front_matter(text: str) -> dict[str, Any]:
     return meta
 
 
+def is_stale(last_checked: Any, today: date | None = None) -> bool:
+    try:
+        checked = date.fromisoformat(str(last_checked))
+    except ValueError:
+        return True  # never checked, or an unreadable date
+    return ((today or date.today()) - checked).days > STALE_AFTER_DAYS
+
+
 def exam_profiles() -> list[dict[str, Any]]:
     """Index of the built-in exam profiles, from each file's front matter."""
     index = []
     for path in sorted(EXAMS_DIR.glob("*.md")):
         meta = _front_matter(path.read_text(encoding="utf-8"))
         if meta.get("id") == path.stem:  # README.md and half-written files have no matching id
-            index.append({k: meta.get(k) for k in ("id", "name", "full_name", "country", "group", "aliases",
-                                                   "last_checked")})
+            entry = {k: meta.get(k) for k in ("id", "name", "full_name", "country", "group", "aliases",
+                                              "official_url", "sources", "last_checked")}
+            entry["stale"] = is_stale(entry["last_checked"])
+            index.append(entry)
     return index
 
 

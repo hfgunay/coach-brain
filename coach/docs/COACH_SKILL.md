@@ -10,8 +10,9 @@ It reaches the coach three ways:
 
 ## Exam profiles
 
-[`coach/skill/exams/`](../coach/skill/exams/) holds one Markdown file per exam (TUS, KPSS so far) with a small
-front matter (id, name, country, group, aliases, official_url, last_checked). The server copies them into the
+[`coach/skill/exams/`](../coach/skill/exams/) holds one Markdown file per exam (TUS so far; health exams next) with a
+small front matter (id, name, country, group, aliases, official_url, sources, last_checked). A profile not checked
+for 120 days is served with `stale: true` and the coach re-checks it with web search. The server copies them into the
 vault next to the skill and `read_instructions` lists them; the coach reads one with
 `read_instructions(which="exam", exam="tus")`. They are a starting point so the coach never asks the student
 what is on their exam; with web search the coach verifies them at the official source. Adding an exam is adding

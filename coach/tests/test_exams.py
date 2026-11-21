@@ -1,7 +1,10 @@
 """Exam profiles are data files: each needs a valid front matter, and the vault gets a mirror of them."""
-from coach.vault import EXAMS_DIR, EXAMS_TARGET_DIR, _front_matter, exam_profile, exam_profiles
+from datetime import date
 
-KEYS = ("id", "name", "full_name", "country", "group", "aliases", "organizer", "official_url", "last_checked")
+from coach.vault import EXAMS_DIR, EXAMS_TARGET_DIR, _front_matter, exam_profile, exam_profiles, is_stale
+
+KEYS = ("id", "name", "full_name", "country", "group", "aliases", "organizer", "official_url", "sources",
+        "last_checked")
 GROUPS = {"medical", "university-entrance", "public-service", "language", "graduate-admission", "professional",
           "school"}
 
@@ -38,3 +41,10 @@ def test_skill_folder_is_mirrored_into_the_vault(tmp_path):
     v._place_skill()
     assert (v.vault / EXAMS_TARGET_DIR / "tus.md").is_file()
     assert not stale.exists()
+
+
+def test_staleness():
+    today = date(2026, 11, 21)
+    assert not is_stale("2026-11-01", today)
+    assert is_stale("2026-01-01", today)
+    assert is_stale("", today) and is_stale(None, today)

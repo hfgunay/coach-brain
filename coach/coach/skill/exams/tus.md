@@ -7,6 +7,7 @@ group: medical
 aliases: [tus, tıpta uzmanlık, tipta uzmanlik, medical specialty exam turkey]
 organizer: ÖSYM
 official_url: https://www.osym.gov.tr
+sources: [https://www.osym.gov.tr/SinavGrubu/Menu/1889]
 last_checked: 2026-11-21
 ---
 
