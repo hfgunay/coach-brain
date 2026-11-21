@@ -26,4 +26,4 @@ When changing the text:
 - Don't describe a new structure for something the repo already has (a separate mistake log, a separate plan file). Check what the engine provides first.
 - Keep the rule to talk in the student's language.
 - Don't remove the factual accuracy rule.
-- Keep the first session short: the student should be studying within three messages.
+- Keep messages short. Orientation is skippable (*sonra* / *devam*), its progress lives in Core.md, and the rough plan (today + this week's goal as the deadline) comes right after the exam and sitting are known.
