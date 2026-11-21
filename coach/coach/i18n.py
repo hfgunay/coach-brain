@@ -243,9 +243,8 @@ MESSAGES.update({
                   "tr": "Claude'da yeni bir sohbet aç. <b>+ → Bağlayıcılar</b>'da <b>{name}</b> açık olsun."},
     "ob_chat_2": {"en": "Send this, or anything in your own words:",
                   "tr": "Şunu gönder ya da kendi cümlelerinle bir şey yaz:"},
-    "ob_first_message": {"en": "Hi! Be my study coach. Get to know me first, then let's make a study plan together.",
-                         "tr": "Merhaba! Çalışma koçum ol. Önce beni tanı, sonra birlikte bir çalışma planı "
-                               "yapalım."},
+    "ob_first_message": {"en": "Hi! Be my study coach. Let's get straight to studying.",
+                         "tr": "Merhaba! Çalışma koçum ol. Hemen çalışmaya başlayalım."},
     "ob_open_claude": {"en": "Open Claude", "tr": "Claude'u aç"},
     "ob_chat_tip": {"en": "The first time, Claude asks permission to use the coach's tools. Choose "
                           "<b>Always allow</b>.",

@@ -30,7 +30,7 @@ coach-server = "coach.server:main"
 packages = ["coach"]
 
 [tool.setuptools.package-data]
-coach = ["skill/SKILL.md"]
+coach = ["skill/SKILL.md", "skill/exams/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

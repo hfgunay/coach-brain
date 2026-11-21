@@ -25,8 +25,12 @@ from mcp.server.mcpserver.exceptions import ToolError
 
 # Repository root: coach/coach/vault.py -> ../../ ; in Docker it comes from COACH_ENGINE_DIR.
 ENGINE_DIR = Path(os.environ.get("COACH_ENGINE_DIR") or Path(__file__).resolve().parents[2])
-COACH_SKILL = Path(__file__).resolve().parent / "skill" / "SKILL.md"
-COACH_SKILL_TARGET = ".agents/skills/study-coach/SKILL.md"
+SKILL_DIR = Path(__file__).resolve().parent / "skill"
+COACH_SKILL = SKILL_DIR / "SKILL.md"
+EXAMS_DIR = SKILL_DIR / "exams"  # one Markdown profile per exam; adding an exam is adding a file
+SKILL_TARGET_DIR = ".agents/skills/study-coach"
+COACH_SKILL_TARGET = SKILL_TARGET_DIR + "/SKILL.md"
+EXAMS_TARGET_DIR = SKILL_TARGET_DIR + "/exams"
 OLD_SKILL_DIRS = (".agents/skills/calisma-kocu",)  # written by the first version
 # The server only needs the Claude/Codex hooks and the core skills; desktop launchers and other client
 # adapters are kept out of the vault (and so out of the folder synced to the student's iPad).
@@ -80,11 +84,19 @@ class Vault:
             self.tmp.mkdir(parents=True, exist_ok=True)
 
     def _place_skill(self) -> None:
-        target = self.vault / COACH_SKILL_TARGET
-        content = COACH_SKILL.read_bytes()
-        if not target.is_file() or target.read_bytes() != content:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(content)
+        """Mirrors the coach skill (SKILL.md and its exam profiles) into the vault, like any vault skill."""
+        files = {COACH_SKILL_TARGET: COACH_SKILL}
+        files.update({f"{EXAMS_TARGET_DIR}/{p.name}": p for p in EXAMS_DIR.glob("*.md")})
+        for rel, source in files.items():
+            target = self.vault / rel
+            content = source.read_bytes()
+            if not target.is_file() or target.read_bytes() != content:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(content)
+        exams = self.vault / EXAMS_TARGET_DIR
+        for stale in exams.glob("*.md") if exams.is_dir() else ():
+            if f"{EXAMS_TARGET_DIR}/{stale.name}" not in files:  # a profile we no longer ship
+                stale.unlink()
         for old in OLD_SKILL_DIRS:
             shutil.rmtree(self.vault / old, ignore_errors=True)
 
@@ -186,6 +198,43 @@ class Vault:
         if self.vault not in path.parents:
             raise VaultError("This path can't be used.")
         return path
+
+
+def _front_matter(text: str) -> dict[str, Any]:
+    """The flat `key: value` / `key: [a, b]` front matter used by exam profiles (no nesting needed)."""
+    if not text.startswith("---\n"):
+        return {}
+    meta: dict[str, Any] = {}
+    for line in text[4:].split("\n---", 1)[0].splitlines():
+        key, sep, value = line.partition(":")
+        if not sep or not key.strip():
+            continue
+        value = value.strip()
+        if value.startswith("[") and value.endswith("]"):
+            meta[key.strip()] = [v.strip() for v in value[1:-1].split(",") if v.strip()]
+        else:
+            meta[key.strip()] = value
+    return meta
+
+
+def exam_profiles() -> list[dict[str, Any]]:
+    """Index of the built-in exam profiles, from each file's front matter."""
+    index = []
+    for path in sorted(EXAMS_DIR.glob("*.md")):
+        meta = _front_matter(path.read_text(encoding="utf-8"))
+        if meta.get("id") == path.stem:  # README.md and half-written files have no matching id
+            index.append({k: meta.get(k) for k in ("id", "name", "full_name", "country", "group", "aliases",
+                                                   "last_checked")})
+    return index
+
+
+def exam_profile(exam_id: str) -> str:
+    exam_id = str(exam_id or "").strip().lower()
+    known = {p["id"] for p in exam_profiles()}
+    if exam_id not in known:
+        raise VaultError(f"No built-in profile for '{exam_id}'. Known: {', '.join(sorted(known)) or 'none'}. "
+                         "Without a profile, look the exam up with web search; ask the student only as a last resort.")
+    return (EXAMS_DIR / f"{exam_id}.md").read_text(encoding="utf-8")
 
 
 def engine_available() -> bool:
