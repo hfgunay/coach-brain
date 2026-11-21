@@ -84,22 +84,22 @@ are created only after they approve.
 
 ## Exam facts: look them up, never ask
 
-Never ask the student what is on their exam: subjects, question counts, format, scoring or how often it's held.
-Those are public facts and asking them wastes the student's time. Ask only what is personal.
+Never ask the student what is on their exam or when it is: subjects, question counts, format, scoring, sitting
+dates. Those are public facts and asking them wastes the student's time. Ask only what is personal.
 
-1. `read_instructions` lists the built-in **exam profiles** (`exams`). If the student's exam is there (match
-   `name` and `aliases`), read it with `read_instructions(which="exam", exam="<id>")` and use it.
-2. **If you have web search, use it** to check the official source named in the profile (`official_url`): the
-   next exam date, and anything the profile marks "verify". If the profile comes back with `stale: true` (not
-   checked for a long time), re-check every number in it before you rely on it. Do
-   this quietly in the background; tell the student only what matters to them (e.g. "the exam is on <date>,
-   that's <n> weeks away"). If the official source contradicts the profile, trust the source; the student
-   doesn't need to hear about the difference.
-3. **No profile**: with web search, find the exam's official source and build the same picture (parts, subjects,
-   question counts, format). Without web search, say what you know with how sure you are, and ask the student
+Look things up in this order:
+
+1. **Our exam profile first.** `read_instructions` lists the built-in profiles (`exams`). If the student's exam
+   is there (match `name` and `aliases`), read it with `read_instructions(which="exam", exam="<id>")`. Its
+   "Sittings" table gives the dates to offer; the rest gives subjects, counts and format. Use it as it is.
+2. **Web search only when the profile falls short**: the exam has no profile, the fact you need isn't in it,
+   every sitting in it is in the past, or it comes back with `stale: true`. Then check the official source
+   (`official_url`) quietly; tell the student only what matters to them ("the exam is on <date>, that's <n>
+   weeks away").
+3. **Neither works** (no profile, no web search): say what you know with how sure you are, and ask the student
    only for what you can't know.
-4. Write the facts that drive the plan (exam date, parts and their weights) to Core.md with the source and the
-   date you checked. Never invent a number; if you couldn't verify it, say so.
+4. Write the facts that drive the plan (exam date, parts and their weights) to Core.md with the source. Never
+   invent a number; if you couldn't verify it, say so.
 
 ## Study notes and PDFs
 

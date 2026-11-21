@@ -7,7 +7,7 @@ group: medical
 aliases: [tus, tıpta uzmanlık, tipta uzmanlik, medical specialty exam turkey]
 organizer: ÖSYM
 official_url: https://www.osym.gov.tr
-sources: [https://www.osym.gov.tr/SinavGrubu/Menu/1889]
+sources: [https://www.osym.gov.tr/SinavGrubu/Menu/1889, https://medimagazin.com.tr/guncel/osym-2027-sinav-takvimini-acikladi-tus-dus-eus-ve-ydus-ne-zaman-yapilacak-121855, https://www.birgun.net/haber/2027-tus-1-donem-ne-zaman-tus-basvuru-ve-sinav-tarihi-746932]
 last_checked: 2026-11-21
 ---
 
@@ -18,9 +18,20 @@ final-year students.
 
 ## When
 
-- Twice a year: the 1st period (1. dönem) usually in spring, the 2nd period (2. dönem) usually in late summer or
-  autumn. **Verify the exact date** in the ÖSYM exam calendar; it changes every year.
+- Twice a year: the 1st period (1. dönem) in spring, the 2nd period (2. dönem) in late summer.
 - One day, two sessions: the basic sciences test in the morning, the clinical sciences test in the afternoon.
+
+## Sittings
+
+From the 2027 ÖSYM calendar as reported by the press (sources in the front matter). When every sitting below
+is in the past, the next ones are missing: look them up.
+
+| Sitting | Applications | Late application | Exam | Results |
+| --- | --- | --- | --- | --- |
+| 2027 TUS 1. dönem | 2-10 Feb 2027 | 17 Feb 2027 | **27 Mar 2027** | 22 Apr 2027 |
+| 2027 TUS 2. dönem | 5-13 Jul 2027 | 22 Jul 2027 | **22 Aug 2027** | 16 Sep 2027 |
+
+The 2nd period comes from one source only; confirm it on osym.gov.tr when you can.
 
 ## Parts and question distribution
 
@@ -60,7 +71,7 @@ the totals per test are stable, the per-subject split can shift by a few questio
 - Questions are mostly case vignettes in clinical sciences and mechanism/recall questions in basic sciences.
   Write practice questions in Turkish, in that style, unless the student asks otherwise.
 
-## What to verify with web search
+## What to look up when the profile isn't enough
 
 Search the official site first (`site:osym.gov.tr TUS <year>`): the exam date and application dates of the next
 period, any change in test structure or scoring. Prep-course analyses of the last papers can show which topics

@@ -1,8 +1,8 @@
 # Exam profiles
 
 One Markdown file per exam. The coach uses a profile as its **starting point** so it never has to ask the
-student basic facts about the exam (subjects, question counts, format). A profile is not the source of truth:
-when the coach has web search it checks the official source first and tells the student what changed.
+student basic facts about the exam (subjects, question counts, format, sitting dates). The coach reads the
+profile first and searches the web only for what it lacks, when its sittings are all past, or when it is stale.
 
 Adding an exam is adding a file here; no code changes. Copy an existing profile and keep the front matter keys:
 
@@ -26,9 +26,9 @@ Groups: `medical` (medical and health licensing/specialty), `university-entrance
 (civil service, teaching, police), `language`, `graduate-admission`, `professional` (law, accounting,
 engineering licences), `school` (course and term exams).
 
-The body says what is stable about the exam: when it is held, its parts and their question counts, the
-question format, scoring, and what the coach should search for to refresh the facts. Mark anything that changes
-every year (dates, fees, quotas) as "verify". Never write a number you could not check; leave it out instead.
+The body says when the exam is held, a **Sittings** table of the next sittings (applications, exam, results),
+its parts and their question counts, the question format, scoring, and what to look up when the profile isn't
+enough. Never write a number you could not check; leave it out instead.
 
 ## Keeping profiles current
 
@@ -37,8 +37,8 @@ then re-checks every number with web search before using it. That keeps students
 be refreshed:
 
 1. Open each URL in `sources`, plus the exam's newest official guide (kılavuz).
-2. Update what changed: parts, question counts, format, scoring. Never copy dates of a single sitting into the
-   file; the coach looks those up.
+2. Update what changed: the Sittings table (add the new year's sittings once the organizer announces them, drop
+   past ones), parts, question counts, format, scoring.
 3. Set `last_checked` to today and open a pull request.
 
 Refresh right after the organizer publishes a new guide, and at least once per exam season.
