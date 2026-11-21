@@ -135,6 +135,9 @@ def test_end_to_end_avenoxbeyin_vault(base):
     out = asyncio.run(_tools(base, a_tok, [
         ("start_session", {}),
         ("read_instructions", {"which": "study-coach"}),
+        ("read_instructions", {"which": "all"}),
+        ("read_instructions", {"which": "exam", "exam": "TUS"}),
+        ("read_instructions", {"which": "exam", "exam": "no-such-exam"}),
         ("create_note", {"source": "notes/exam/pharmacology/digoxin-hyperkalemia.md",
                          "text": "# Digoxin and hyperkalemia\n\nDigoxin toxicity causes hyperkalemia; I mistook it "
                                  "for hypokalemia.\n",
@@ -156,6 +159,9 @@ def test_end_to_end_avenoxbeyin_vault(base):
     assert first["session"] and "Receipt session=" in first["context"] and "850-Companion/Core.md" in first["context"]
     assert "/vaults/" not in first["context"]
     assert "search_vault" in _ok(out["read_instructions"][0])["study-coach"]
+    assert "tus" in {e["id"] for e in _ok(out["read_instructions"][1])["exams"]}
+    assert "Temel Tıp Bilimleri" in _ok(out["read_instructions"][2])["exam"]
+    assert out["read_instructions"][3]["error"] is True
     assert _ok(out["create_note"][0]).get("exit_code") == 0
     assert _ok(out["create_task"][0])["due_at"] == "2026-01-02"
     found = [r["source"] for r in _ok(out["search_vault"][0])["records"]]
